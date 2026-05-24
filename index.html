@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>智能导盲系统 - 云端监控</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#f0f2f5;--card:#fff;--primary:#1677ff;--success:#52c41a;--warning:#faad14;--danger:#ff4d4f;--text:#1d1d1f;--text2:#6b7280;--text3:#9ca3af;--radius:12px;--shadow:0 2px 10px rgba(0,0,0,0.06);--sidebar-w:200px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+.app{display:flex;min-height:100vh}
+.sidebar{width:var(--sidebar-w);background:#1d1d2b;color:#fff;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:200}
+.sidebar-header{padding:20px 16px 14px;border-bottom:1px solid rgba(255,255,255,0.08)}
+.sidebar-header h2{font-size:15px;font-weight:700}
+.sidebar-header .sub{font-size:11px;color:rgba(255,255,255,0.4);margin-top:3px}
+.sidebar-nav{flex:1;padding:8px 0}
+.nav-item{display:flex;align-items:center;gap:10px;width:100%;padding:12px 20px;border:none;background:none;color:rgba(255,255,255,0.55);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s;text-align:left}
+.nav-item:hover{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.85)}
+.nav-item.active{background:rgba(22,119,255,0.15);color:#fff;border-right:3px solid var(--primary)}
+.nav-item .nav-icon{font-size:18px;width:22px;text-align:center}
+.sidebar-conn{padding:10px 16px;border-top:1px solid rgba(255,255,255,0.08);font-size:11px;color:rgba(255,255,255,0.4)}
+.conn-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff4d4f;margin-right:6px;vertical-align:middle}
+.conn-dot.online{background:#52c41a;box-shadow:0 0 6px rgba(82,196,26,0.5)}
+.main{margin-left:var(--sidebar-w);flex:1;min-height:100vh;display:flex;flex-direction:column}
+.topbar{background:#fff;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e5e7eb;position:sticky;top:0;z-index:100}
+.topbar h1{font-size:15px;font-weight:700}
+.topbar .status{font-size:12px;color:var(--text3)}
+.topbar .status.ok{color:var(--success)}
+.content{flex:1;padding:16px 20px}
+.tab-panel{display:none}.tab-panel.active{display:block}
+.sensor-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.sensor-card{background:var(--card);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:transform 0.15s}
+.sensor-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--success);transition:background 0.3s}
+.sensor-card.warning::before{background:var(--warning)}
+.sensor-card.danger::before{background:var(--danger)}
+.card-icon{font-size:18px;margin-bottom:6px}
+.card-label{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px}
+.card-value{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
+.card-sub{font-size:10px;color:var(--text3);margin-top:2px}
+.dash-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.dash-section{background:var(--card);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)}
+.dash-section h3{font-size:12px;font-weight:700;margin-bottom:10px;color:var(--text2)}
+.loc-info{display:flex;flex-direction:column;gap:6px}
+.loc-info .row{display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid #f5f5f5}
+.loc-info .row:last-child{border-bottom:none}
+.loc-info .lbl{color:var(--text3)}.loc-info .val{font-weight:600;font-variant-numeric:tabular-nums}
+.chart-container{background:var(--card);border-radius:var(--radius);padding:12px;box-shadow:var(--shadow);margin-bottom:12px}
+.chart-container h3{font-size:13px;font-weight:600;margin-bottom:8px;color:var(--text2)}
+.chart-box{height:200px;position:relative}
+.range-bar{display:flex;gap:6px;margin-bottom:14px}
+.range-btn{padding:6px 14px;border:1.5px solid #d9d9d9;border-radius:8px;font-size:12px;font-weight:600;background:#fff;color:var(--text2);cursor:pointer;transition:all 0.2s}
+.range-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.loc-btns{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.loc-btn{padding:12px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;color:#fff;transition:opacity 0.2s}
+.loc-btn:active{opacity:0.8}
+.loc-btn.primary{background:var(--primary)}.loc-btn.green{background:var(--success)}.loc-btn.orange{background:var(--warning)}.loc-btn.red{background:var(--danger)}
+#fullMap{height:460px;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+.placeholder{text-align:center;padding:80px 20px}
+.placeholder .icon{font-size:60px;margin-bottom:16px;opacity:0.3}
+.placeholder .text{font-size:14px;color:var(--text3)}
+.profile-header{text-align:center;padding:24px 0 16px}
+.profile-avatar{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#1677ff,#722ed1);display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff;margin:0 auto 10px}
+.profile-name{font-size:16px;font-weight:700}
+.profile-role{font-size:12px;color:var(--text3);margin-top:2px}
+.info-card{background:var(--card);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);margin-bottom:14px}
+.info-card h3{font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text2)}
+.info-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f5f5f5;font-size:13px}
+.info-row:last-child{border-bottom:none}
+.info-row .key{color:var(--text3)}.info-row .val{font-weight:600;font-variant-numeric:tabular-nums}
+@media(max-width:768px){
+  .sidebar{width:56px}.sidebar-header h2,.sidebar-header .sub,.nav-item span:not(.nav-icon){display:none}
+  .sidebar-header{padding:12px 0;text-align:center}.nav-item{justify-content:center;padding:12px 0}
+  .main{margin-left:56px}.sensor-grid{grid-template-columns:repeat(2,1fr)}.dash-row{grid-template-columns:1fr}.loc-btns{grid-template-columns:repeat(2,1fr)}
+}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.1);border-radius:4px}
+.login-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#1d1d2b 0%,#2d1b69 100%);display:flex;align-items:center;justify-content:center;z-index:9999}
+.login-box{background:#fff;border-radius:16px;padding:40px 36px;width:360px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+.login-box h2{text-align:center;font-size:22px;font-weight:700;margin-bottom:6px;color:var(--text)}
+.login-box .login-sub{text-align:center;font-size:12px;color:var(--text3);margin-bottom:28px}
+.login-box .field{margin-bottom:18px}
+.login-box label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px}
+.login-box input{width:100%;padding:10px 14px;border:1.5px solid #d9d9d9;border-radius:8px;font-size:14px;outline:none;transition:border 0.2s}
+.login-box input:focus{border-color:var(--primary)}
+.login-box .login-btn{width:100%;padding:12px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-top:6px;transition:opacity 0.2s}
+.login-box .login-btn:active{opacity:0.8}
+.login-box .login-err{text-align:center;font-size:12px;color:var(--danger);margin-top:10px;min-height:18px}
+.logout-btn{display:flex;align-items:center;gap:8px;width:100%;padding:10px 20px;border:none;background:none;color:rgba(255,255,255,0.4);font-size:12px;cursor:pointer;transition:all 0.2s;text-align:left;border-top:1px solid rgba(255,255,255,0.08)}
+.logout-btn:hover{color:rgba(255,255,255,0.7)}
+.logout-btn .nav-icon{font-size:16px}
+</style>
+</head>
+<body>
+
+<!-- 登录界面 -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <h2>&#128301; 智能导盲</h2>
+    <div class="login-sub">Smart Blind Guide System</div>
+    <div class="field">
+      <label>账号</label>
+      <input type="text" id="loginUser" placeholder="请输入账号" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>密码</label>
+      <input type="password" id="loginPass" placeholder="请输入密码">
+    </div>
+    <button class="login-btn" onclick="doLogin()">登 录</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<div class="app">
+<!-- 左侧导航 -->
+<div class="sidebar">
+  <div class="sidebar-header">
+    <h2>&#128301; 智能导盲</h2>
+    <div class="sub">Smart Blind Guide</div>
+  </div>
+  <div class="sidebar-nav">
+    <button class="nav-item active" onclick="switchTab('dashboard',this)"><span class="nav-icon">&#128200;</span><span>仪表盘</span></button>
+    <button class="nav-item" onclick="switchTab('charts',this)"><span class="nav-icon">&#128202;</span><span>数据图表</span></button>
+    <button class="nav-item" onclick="switchTab('camera',this)"><span class="nav-icon">&#128247;</span><span>视觉监控</span></button>
+    <button class="nav-item" onclick="switchTab('location',this)"><span class="nav-icon">&#128506;</span><span>实时定位</span></button>
+    <button class="nav-item" onclick="switchTab('profile',this)"><span class="nav-icon">&#128100;</span><span>个人中心</span></button>
+  </div>
+  <div class="sidebar-conn">
+    <span class="conn-dot" id="connDot"></span><span id="connText">等待数据</span>
+  </div>
+  <button class="logout-btn" onclick="doLogout()"><span class="nav-icon">&#128682;</span><span>退出登录</span></button>
+</div>
+
+<!-- 右侧主内容 -->
+<div class="main">
+<div class="topbar">
+  <h1>&#128200; 云端监控</h1>
+  <div class="status" id="topStatus">等待数据...</div>
+</div>
+
+<div class="content">
+<!-- 仪表盘 -->
+<div class="tab-panel active" id="panel-dashboard">
+  <div class="sensor-grid">
+    <div class="sensor-card" id="card-temp"><div class="card-icon">&#127777;&#65039;</div><div class="card-label">温度</div><div class="card-value" id="val-temp">--</div><div class="card-sub">°C</div></div>
+    <div class="sensor-card" id="card-humi"><div class="card-icon">&#128167;</div><div class="card-label">湿度</div><div class="card-value" id="val-humi">--</div><div class="card-sub">%</div></div>
+    <div class="sensor-card" id="card-gas"><div class="card-icon">&#128293;</div><div class="card-label">烟雾</div><div class="card-value" id="val-gas">--</div><div class="card-sub">ADC</div></div>
+    <div class="sensor-card" id="card-hr"><div class="card-icon">&#10084;&#65039;</div><div class="card-label">心率</div><div class="card-value" id="val-hr">--</div><div class="card-sub">BPM</div></div>
+    <div class="sensor-card" id="card-spo2"><div class="card-icon">&#129658;</div><div class="card-label">血氧</div><div class="card-value" id="val-spo2">--</div><div class="card-sub">%</div></div>
+    <div class="sensor-card" id="card-presence"><div class="card-icon">&#128101;</div><div class="card-label">人体感应</div><div class="card-value" id="val-presence">--</div><div class="card-sub">LD2410B</div></div>
+  </div>
+  <div class="dash-row">
+    <div class="dash-section">
+      <h3>&#128506; GPS 位置</h3>
+      <div class="loc-info">
+        <div class="row"><span class="lbl">纬度</span><span class="val" id="loc-lat">--</span></div>
+        <div class="row"><span class="lbl">经度</span><span class="val" id="loc-lng">--</span></div>
+        <div class="row"><span class="lbl">状态</span><span class="val" id="loc-status">未定位</span></div>
+        <div class="row"><span class="lbl">更新时间</span><span class="val" id="loc-time">--</span></div>
+      </div>
+    </div>
+    <div class="dash-section">
+      <h3>&#128208; 运动状态</h3>
+      <div class="loc-info">
+        <div class="row"><span class="lbl">状态</span><span class="val" id="motion-status">--</span></div>
+        <div class="row"><span class="lbl">晃动</span><span class="val" id="motion-shake">--</span></div>
+        <div class="row"><span class="lbl">加速度X</span><span class="val" id="accel-x">--</span></div>
+        <div class="row"><span class="lbl">加速度Y</span><span class="val" id="accel-y">--</span></div>
+        <div class="row"><span class="lbl">加速度Z</span><span class="val" id="accel-z">--</span></div>
+      </div>
+    </div>
+    <div class="dash-section">
+      <h3>&#128736; 陀螺仪</h3>
+      <div class="loc-info">
+        <div class="row"><span class="lbl">X轴</span><span class="val" id="gyro-x">--</span></div>
+        <div class="row"><span class="lbl">Y轴</span><span class="val" id="gyro-y">--</span></div>
+        <div class="row"><span class="lbl">Z轴</span><span class="val" id="gyro-z">--</span></div>
+        <div class="row"><span class="lbl">手指检测</span><span class="val" id="finger-status">--</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 数据图表 -->
+<div class="tab-panel" id="panel-charts">
+  <div class="range-bar">
+    <button class="range-btn active" onclick="setRange(0.5,this)">12小时</button>
+    <button class="range-btn" onclick="setRange(1,this)">24小时</button>
+    <button class="range-btn" onclick="setRange(5,this)">5天</button>
+  </div>
+  <div class="chart-container"><h3>&#10084;&#65039; 心率趋势</h3><div class="chart-box"><canvas id="chartHr"></canvas></div></div>
+  <div class="chart-container"><h3>&#127777;&#65039; 温湿度</h3><div class="chart-box"><canvas id="chartEnv"></canvas></div></div>
+  <div class="chart-container"><h3>&#128293; 烟雾浓度</h3><div class="chart-box"><canvas id="chartGas"></canvas></div></div>
+</div>
+
+<!-- 视觉监控 -->
+<div class="tab-panel" id="panel-camera">
+  <div class="placeholder"><div class="icon">&#128247;</div><div class="text">视觉监控功能开发中...</div></div>
+</div>
+
+<!-- 实时定位 -->
+<div class="tab-panel" id="panel-location">
+  <div class="loc-btns">
+    <button class="loc-btn primary" onclick="locCenter()">&#128205; 回到当前位置</button>
+    <button class="loc-btn green" onclick="locToggleTrack()">&#128934; 显示轨迹</button>
+    <button class="loc-btn orange" onclick="locClearTrack()">&#128465; 清除轨迹</button>
+    <button class="loc-btn red" onclick="locToggleSatellite()">&#127758; 切换卫星图</button>
+  </div>
+  <div id="fullMap"></div>
+</div>
+
+<!-- 个人中心 -->
+<div class="tab-panel" id="panel-profile">
+  <div class="profile-header">
+    <div class="profile-avatar">S</div>
+    <div class="profile-name">智能导盲系统</div>
+    <div class="profile-role">ESP32-P4 Monitor</div>
+  </div>
+  <div class="info-card">
+    <h3>&#128187; 系统信息</h3>
+    <div class="info-row"><span class="key">数据来源</span><span class="val">华为云IoTDA</span></div>
+    <div class="info-row"><span class="key">更新间隔</span><span class="val">3秒</span></div>
+    <div class="info-row"><span class="key">最后更新</span><span class="val" id="prof-last">--</span></div>
+    <div class="info-row"><span class="key">数据条数</span><span class="val" id="prof-count">0</span></div>
+    <div class="info-row"><span class="key">版本</span><span class="val">v1.0.0</span></div>
+  </div>
+</div>
+
+</div>
+</div>
+</div>
+
+<script>
+/* ================================================================
+   ★★★ 配置区 - 改成你的OBS桶地址 ★★★
+   ================================================================ */
+var OBS_BASE = 'https://smart-guide-data.obs.cn-north-4.myhuaweicloud.com';
+
+/* ================================================================
+   全局状态
+   ================================================================ */
+var msgCount = 0;
+var sensorHistory = { labels:[], temp:[], humi:[], gas:[], hr:[], spo2:[] };
+var MAX_HISTORY = 500;
+var fullMap, fullMarker, trackLine, trackPoints = [];
+var trackVisible = true, satelliteMode = false;
+var cHr, cEnv, cGas;
+
+/* ================================================================
+   Tab 切换
+   ================================================================ */
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.nav-item').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('panel-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'location' && fullMap) setTimeout(function(){ fullMap.invalidateSize(); }, 200);
+}
+
+/* ================================================================
+   地图
+   ================================================================ */
+function initMap() {
+  fullMap = L.map('fullMap', { zoomControl: false }).setView([30.57, 104.07], 15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(fullMap);
+  L.control.zoom({ position: 'topright' }).addTo(fullMap);
+  fullMarker = L.marker([30.57, 104.07], {
+    icon: L.divIcon({ className:'', html:'<div style="width:16px;height:16px;background:#1677ff;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(22,119,255,0.4)"></div>', iconSize:[16,16], iconAnchor:[8,8] })
+  }).addTo(fullMap);
+  trackLine = L.polyline([], { color:'#1677ff', weight:3, opacity:0.6 }).addTo(fullMap);
+}
+function locCenter() { if (trackPoints.length > 0) fullMap.setView(trackPoints[trackPoints.length-1], 17); }
+function locToggleTrack() { trackVisible = !trackVisible; if (trackLine) trackLine.setStyle({ opacity: trackVisible ? 0.6 : 0 }); }
+function locClearTrack() { trackPoints = []; if (trackLine) trackLine.setLatLngs([]); }
+function locToggleSatellite() {
+  satelliteMode = !satelliteMode;
+  fullMap.eachLayer(function(l){ if (l instanceof L.TileLayer) fullMap.removeLayer(l); });
+  if (satelliteMode) {
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom:19 }).addTo(fullMap);
+  } else {
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(fullMap);
+  }
+}
+
+/* ================================================================
+   Chart.js
+   ================================================================ */
+function timeLabel() {
+  var d = new Date();
+  return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0') + ':' + d.getSeconds().toString().padStart(2,'0');
+}
+
+function initCharts() {
+  var opts = {
+    responsive:true, maintainAspectRatio:false, animation:{duration:200},
+    scales: { x:{grid:{display:false},ticks:{font:{size:10},maxTicksLimit:8}}, y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:10}}} },
+    plugins: { legend:{labels:{boxWidth:12,font:{size:11}}} },
+    elements: { point:{radius:0}, line:{tension:0.3} }
+  };
+  cHr = new Chart(document.getElementById('chartHr'), { type:'line', data:{labels:[], datasets:[{label:'心率 BPM',data:[],borderColor:'#ff4d4f',backgroundColor:'rgba(255,77,79,0.08)',fill:true}]}, options:opts });
+  cEnv = new Chart(document.getElementById('chartEnv'), { type:'line', data:{labels:[], datasets:[{label:'温度 °C',data:[],borderColor:'#fa8c16',fill:true},{label:'湿度 %',data:[],borderColor:'#13c2c2',fill:true}]}, options:opts });
+  cGas = new Chart(document.getElementById('chartGas'), { type:'bar', data:{labels:[], datasets:[{label:'烟雾 ADC',data:[],backgroundColor:'rgba(250,173,20,0.5)',borderColor:'#faad14',borderWidth:1}]}, options:Object.assign({},opts,{elements:{}}) });
+}
+
+var currentRangeDays = 0.5;
+function setRange(days, btn) {
+  currentRangeDays = days;
+  document.querySelectorAll('.range-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  updateChartDisplay();
+}
+
+function updateChartDisplay() {
+  var total = sensorHistory.labels.length;
+  var points = Math.min(total, Math.floor(currentRangeDays * 24 * 60 / 3));
+  if (points < 1) points = total;
+  var start = total - points;
+  var labels = sensorHistory.labels.slice(start);
+  cHr.data.labels = labels; cHr.data.datasets[0].data = sensorHistory.hr.slice(start); cHr.update('none');
+  cEnv.data.labels = labels; cEnv.data.datasets[0].data = sensorHistory.temp.slice(start); cEnv.data.datasets[1].data = sensorHistory.humi.slice(start); cEnv.update('none');
+  cGas.data.labels = labels; cGas.data.datasets[0].data = sensorHistory.gas.slice(start); cGas.update('none');
+}
+
+/* ================================================================
+   卡片状态
+   ================================================================ */
+function setCardState(id, level) { var c = document.getElementById(id); if(!c)return; c.classList.remove('warning','danger'); if(level==='warning')c.classList.add('warning'); if(level==='danger')c.classList.add('danger'); }
+function setColor(id, color) { var el = document.getElementById(id); if(el) el.style.color = color; }
+function setText(id, text) { var el = document.getElementById(id); if(el) el.textContent = text; }
+
+/* ================================================================
+   核心：每3秒从OBS拉取数据
+   ================================================================ */
+var lastDataTime = '';
+
+function fetchData() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', OBS_BASE + '/latest.json?t=' + Date.now(), true);
+  xhr.timeout = 5000;
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      try {
+        var data = JSON.parse(xhr.responseText);
+        if (data.update_time && data.update_time !== lastDataTime) {
+          lastDataTime = data.update_time;
+          updateUI(data);
+        }
+        document.getElementById('connDot').classList.add('online');
+        document.getElementById('connText').textContent = '数据正常';
+        document.getElementById('topStatus').textContent = '最后更新: ' + (data.update_time || '--');
+        document.getElementById('topStatus').className = 'status ok';
+      } catch(e) {
+        console.error('JSON解析失败', e);
+      }
+    }
+  };
+  xhr.onerror = function() {
+    document.getElementById('connDot').classList.remove('online');
+    document.getElementById('connText').textContent = '读取失败';
+    document.getElementById('topStatus').textContent = '无法连接OBS';
+    document.getElementById('topStatus').className = 'status';
+  };
+  xhr.send();
+}
+
+function updateUI(d) {
+  msgCount++;
+  setText('prof-count', msgCount);
+  setText('prof-last', d.update_time || '--');
+
+  // 温湿度
+  setText('val-temp', d.temperature != null ? Number(d.temperature).toFixed(1) : '--');
+  setText('val-humi', d.humidity != null ? Number(d.humidity).toFixed(1) : '--');
+  var tlv = (d.temperature >= 15 && d.temperature <= 35) ? '' : (d.temperature > 45 ? 'danger' : 'warning');
+  setCardState('card-temp', tlv);
+  setColor('val-temp', tlv === 'danger' ? 'var(--danger)' : tlv === 'warning' ? 'var(--warning)' : 'var(--text)');
+  setCardState('card-humi', (d.humidity >= 30 && d.humidity <= 70) ? '' : 'warning');
+
+  // 烟雾
+  setText('val-gas', d.raw_smoke != null ? d.raw_smoke : '--');
+  var glv = d.raw_smoke < 300 ? '' : (d.raw_smoke < 600 ? 'warning' : 'danger');
+  setCardState('card-gas', glv);
+  setColor('val-gas', glv === 'danger' ? 'var(--danger)' : glv === 'warning' ? 'var(--warning)' : 'var(--text)');
+
+  // 心率血氧
+  if (d.finger_detected) {
+    setText('val-hr', d.heart_rate || '--');
+    setText('val-spo2', d.spO2 || '--');
+    var hlv = (d.heart_rate >= 40 && d.heart_rate <= 140) ? '' : 'danger';
+    setCardState('card-hr', hlv);
+    setCardState('card-spo2', d.spO2 >= 90 ? '' : 'danger');
+    setColor('val-hr', hlv ? 'var(--danger)' : 'var(--text)');
+    setColor('val-spo2', d.spO2 >= 90 ? 'var(--text)' : 'var(--danger)');
+  } else {
+    setText('val-hr', '--'); setText('val-spo2', '--');
+    setCardState('card-hr', ''); setCardState('card-spo2', '');
+    setColor('val-hr', 'var(--text3)'); setColor('val-spo2', 'var(--text3)');
+  }
+
+  // 人体感应
+  setText('val-presence', d.presence ? '有人' : '无人');
+  setColor('val-presence', d.presence ? 'var(--success)' : 'var(--text3)');
+
+  // 运动状态
+  var motionLabels = ['静止', '轻微运动', '剧烈运动'];
+  setText('motion-status', motionLabels[d.motion_status] || '--');
+  setText('motion-shake', d.shake ? '检测到晃动!' : '正常');
+  setColor('motion-shake', d.shake ? 'var(--danger)' : 'var(--success)');
+  setText('accel-x', d.accel_x != null ? Number(d.accel_x).toFixed(3) : '--');
+  setText('accel-y', d.accel_y != null ? Number(d.accel_y).toFixed(3) : '--');
+  setText('accel-z', d.accel_z != null ? Number(d.accel_z).toFixed(3) : '--');
+
+  // 陀螺仪
+  setText('gyro-x', d.gyro_x != null ? Number(d.gyro_x).toFixed(1) : '--');
+  setText('gyro-y', d.gyro_y != null ? Number(d.gyro_y).toFixed(1) : '--');
+  setText('gyro-z', d.gyro_z != null ? Number(d.gyro_z).toFixed(1) : '--');
+  setText('finger-status', d.finger_detected ? '已检测' : '未检测');
+
+  // GPS
+  if (d.gps_valid && d.latitude && d.longitude) {
+    setText('loc-lat', Number(d.latitude).toFixed(6));
+    setText('loc-lng', Number(d.longitude).toFixed(6));
+    setText('loc-status', '已定位');
+    setColor('loc-status', 'var(--success)');
+    setText('loc-time', d.update_time || '--');
+
+    var latlng = [d.latitude, d.longitude];
+    if (fullMarker) fullMarker.setLatLng(latlng);
+    trackPoints.push(latlng);
+    if (trackLine) trackLine.setLatLngs(trackPoints);
+    if (fullMap && trackPoints.length <= 1) fullMap.setView(latlng, 16);
+  } else {
+    setText('loc-status', '未定位');
+    setColor('loc-status', 'var(--text3)');
+  }
+
+  // 图表数据
+  sensorHistory.labels.push(timeLabel());
+  sensorHistory.temp.push(d.temperature || 0);
+  sensorHistory.humi.push(d.humidity || 0);
+  sensorHistory.gas.push(d.raw_smoke || 0);
+  sensorHistory.hr.push(d.heart_rate || 0);
+  sensorHistory.spo2.push(d.spO2 || 0);
+  if (sensorHistory.labels.length > MAX_HISTORY) {
+    sensorHistory.labels.shift(); sensorHistory.temp.shift(); sensorHistory.humi.shift();
+    sensorHistory.gas.shift(); sensorHistory.hr.shift(); sensorHistory.spo2.shift();
+  }
+  updateChartDisplay();
+}
+
+/* ================================================================
+   登录/退出
+   ================================================================ */
+var VALID_USER = 'qwertyu';
+var VALID_PASS = '123456';
+
+function doLogin() {
+  var u = document.getElementById('loginUser').value;
+  var p = document.getElementById('loginPass').value;
+  if (u === VALID_USER && p === VALID_PASS) {
+    localStorage.setItem('sg_logged_in', '1');
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('loginErr').textContent = '';
+    initMap();
+    initCharts();
+    fetchData();
+    setInterval(fetchData, 3000);
+  } else {
+    document.getElementById('loginErr').textContent = '账号或密码错误';
+  }
+}
+
+function doLogout() {
+  localStorage.removeItem('sg_logged_in');
+  location.reload();
+}
+
+// 回车键登录
+document.getElementById('loginPass').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doLogin();
+});
+document.getElementById('loginUser').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') document.getElementById('loginPass').focus();
+});
+
+/* ================================================================
+   启动
+   ================================================================ */
+if (localStorage.getItem('sg_logged_in') === '1') {
+  document.getElementById('loginOverlay').style.display = 'none';
+  initMap();
+  initCharts();
+  fetchData();
+  setInterval(fetchData, 3000);
+}
+</script>
+</body>
+</html>
