@@ -53,6 +53,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 .range-bar{display:flex;gap:6px;margin-bottom:14px}
 .range-btn{padding:6px 14px;border:1.5px solid #d9d9d9;border-radius:8px;font-size:12px;font-weight:600;background:#fff;color:var(--text2);cursor:pointer;transition:all 0.2s}
 .range-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.export-btn{padding:6px 14px;border:1.5px solid var(--primary);border-radius:8px;font-size:12px;font-weight:600;background:#fff;color:var(--primary);cursor:pointer;transition:all 0.2s}
+.export-btn:hover{background:var(--primary);color:#fff}
 .loc-btns{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
 .loc-btn{padding:12px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;color:#fff;transition:opacity 0.2s}
 .loc-btn:active{opacity:0.8}
@@ -184,12 +186,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 
 <!-- 数据图表 -->
 <div class="tab-panel" id="panel-charts">
-  <div class="range-bar">
-    <button class="range-btn active" onclick="setRange(0.5,this)">12小时</button>
-    <button class="range-btn" onclick="setRange(1,this)">24小时</button>
-    <button class="range-btn" onclick="setRange(5,this)">5天</button>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+    <div class="range-bar" style="margin-bottom:0">
+      <button class="range-btn active" onclick="setRange(0.5,this)">12小时</button>
+      <button class="range-btn" onclick="setRange(1,this)">24小时</button>
+      <button class="range-btn" onclick="setRange(3,this)">3天</button>
+      <button class="range-btn" onclick="setRange(5,this)">5天</button>
+      <button class="range-btn" onclick="setRange(7,this)">7天</button>
+    </div>
+    <button class="export-btn" onclick="exportCharts()">&#128190; 导出图表</button>
   </div>
-  <div class="chart-container"><h3>&#10084;&#65039; 心率趋势</h3><div class="chart-box"><canvas id="chartHr"></canvas></div></div>
+  <div class="chart-container"><h3>&#10084;&#65039; 心率 / 血氧</h3><div class="chart-box"><canvas id="chartHr"></canvas></div></div>
   <div class="chart-container"><h3>&#127777;&#65039; 温湿度</h3><div class="chart-box"><canvas id="chartEnv"></canvas></div></div>
   <div class="chart-container"><h3>&#128293; 烟雾浓度</h3><div class="chart-box"><canvas id="chartGas"></canvas></div></div>
 </div>
@@ -298,7 +305,7 @@ function initCharts() {
     plugins: { legend:{labels:{boxWidth:12,font:{size:11}}} },
     elements: { point:{radius:0}, line:{tension:0.3} }
   };
-  cHr = new Chart(document.getElementById('chartHr'), { type:'line', data:{labels:[], datasets:[{label:'心率 BPM',data:[],borderColor:'#ff4d4f',backgroundColor:'rgba(255,77,79,0.08)',fill:true}]}, options:opts });
+  cHr = new Chart(document.getElementById('chartHr'), { type:'line', data:{labels:[], datasets:[{label:'心率 BPM',data:[],borderColor:'#ff4d4f',backgroundColor:'rgba(255,77,79,0.08)',fill:true},{label:'血氧 %',data:[],borderColor:'#13c2c2',backgroundColor:'rgba(19,194,194,0.08)',fill:true}]}, options:opts });
   cEnv = new Chart(document.getElementById('chartEnv'), { type:'line', data:{labels:[], datasets:[{label:'温度 °C',data:[],borderColor:'#fa8c16',fill:true},{label:'湿度 %',data:[],borderColor:'#13c2c2',fill:true}]}, options:opts });
   cGas = new Chart(document.getElementById('chartGas'), { type:'bar', data:{labels:[], datasets:[{label:'烟雾 ADC',data:[],backgroundColor:'rgba(250,173,20,0.5)',borderColor:'#faad14',borderWidth:1}]}, options:Object.assign({},opts,{elements:{}}) });
 }
@@ -317,9 +324,26 @@ function updateChartDisplay() {
   if (points < 1) points = total;
   var start = total - points;
   var labels = sensorHistory.labels.slice(start);
-  cHr.data.labels = labels; cHr.data.datasets[0].data = sensorHistory.hr.slice(start); cHr.update('none');
+  cHr.data.labels = labels; cHr.data.datasets[0].data = sensorHistory.hr.slice(start); cHr.data.datasets[1].data = sensorHistory.spo2.slice(start); cHr.update('none');
   cEnv.data.labels = labels; cEnv.data.datasets[0].data = sensorHistory.temp.slice(start); cEnv.data.datasets[1].data = sensorHistory.humi.slice(start); cEnv.update('none');
   cGas.data.labels = labels; cGas.data.datasets[0].data = sensorHistory.gas.slice(start); cGas.update('none');
+}
+
+function exportCharts() {
+  var charts = [
+    { id: 'chartHr', name: '心率血氧' },
+    { id: 'chartEnv', name: '温湿度' },
+    { id: 'chartGas', name: '烟雾浓度' }
+  ];
+  charts.forEach(function(c, i) {
+    setTimeout(function() {
+      var canvas = document.getElementById(c.id);
+      var link = document.createElement('a');
+      link.download = c.name + '_' + new Date().toISOString().slice(0,10) + '.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }, i * 500);
+  });
 }
 
 /* ================================================================
