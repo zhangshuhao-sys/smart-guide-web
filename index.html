@@ -55,6 +55,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 .range-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
 .export-btn{padding:6px 14px;border:1.5px solid var(--primary);border-radius:8px;font-size:12px;font-weight:600;background:#fff;color:var(--primary);cursor:pointer;transition:all 0.2s}
 .export-btn:hover{background:var(--primary);color:#fff}
+.alerts-layout{display:grid;grid-template-columns:320px 1fr;gap:14px}
+.alert-card{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+.alert-card h3{font-size:13px;font-weight:600;margin-bottom:12px;color:var(--text2)}
+.threshold-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f5f5f5}
+.threshold-row:last-child{border-bottom:none}
+.threshold-row label{font-size:12px;color:var(--text2)}
+.threshold-row input{width:70px;padding:4px 8px;border:1.5px solid #d9d9d9;border-radius:6px;font-size:12px;text-align:right;outline:none}
+.threshold-row input:focus{border-color:var(--primary)}
+.alert-list{max-height:420px;overflow-y:auto}
+.alert-item{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid #f5f5f5;font-size:12px}
+.alert-item:last-child{border-bottom:none}
+.alert-dot{width:8px;height:8px;border-radius:50%;margin-top:3px;flex-shrink:0}
+.alert-dot.warn{background:var(--warning)}
+.alert-dot.danger{background:var(--danger)}
+.alert-time{color:var(--text3);font-size:11px;white-space:nowrap}
+.alert-msg{color:var(--text2);flex:1}
+.alert-empty{text-align:center;padding:40px 0;color:var(--text3);font-size:13px}
+.alert-clear-btn{padding:4px 10px;border:1px solid #d9d9d9;border-radius:6px;font-size:11px;background:#fff;color:var(--text3);cursor:pointer}
+.alert-clear-btn:hover{border-color:var(--danger);color:var(--danger)}
+.alert-badge{background:var(--danger);color:#fff;font-size:10px;border-radius:10px;padding:1px 6px;margin-left:4px;font-weight:700}
+@media(max-width:768px){.alerts-layout{grid-template-columns:1fr}}
 .loc-btns{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
 .loc-btn{padding:12px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;color:#fff;transition:opacity 0.2s}
 .loc-btn:active{opacity:0.8}
@@ -124,6 +145,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
   <div class="sidebar-nav">
     <button class="nav-item active" onclick="switchTab('dashboard',this)"><span class="nav-icon">&#128200;</span><span>仪表盘</span></button>
     <button class="nav-item" onclick="switchTab('charts',this)"><span class="nav-icon">&#128202;</span><span>数据图表</span></button>
+    <button class="nav-item" onclick="switchTab('alerts',this)"><span class="nav-icon">&#9888;</span><span>报警中心</span></button>
     <button class="nav-item" onclick="switchTab('camera',this)"><span class="nav-icon">&#128247;</span><span>视觉监控</span></button>
     <button class="nav-item" onclick="switchTab('location',this)"><span class="nav-icon">&#128506;</span><span>实时定位</span></button>
     <button class="nav-item" onclick="switchTab('profile',this)"><span class="nav-icon">&#128100;</span><span>个人中心</span></button>
@@ -199,6 +221,36 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
   <div class="chart-container"><h3>&#10084;&#65039; 心率 / 血氧</h3><div class="chart-box"><canvas id="chartHr"></canvas></div></div>
   <div class="chart-container"><h3>&#127777;&#65039; 温湿度</h3><div class="chart-box"><canvas id="chartEnv"></canvas></div></div>
   <div class="chart-container"><h3>&#128293; 烟雾浓度</h3><div class="chart-box"><canvas id="chartGas"></canvas></div></div>
+</div>
+
+<!-- 报警中心 -->
+<div class="tab-panel" id="panel-alerts">
+  <div class="alerts-layout">
+    <div class="alerts-left">
+      <div class="alert-card">
+        <h3>&#9881; 阈值设置</h3>
+        <div class="threshold-row"><label>温度上限 (°C)</label><input type="number" id="th-temp-max" value="40" onchange="saveThresholds()"></div>
+        <div class="threshold-row"><label>温度下限 (°C)</label><input type="number" id="th-temp-min" value="10" onchange="saveThresholds()"></div>
+        <div class="threshold-row"><label>湿度上限 (%)</label><input type="number" id="th-humi-max" value="80" onchange="saveThresholds()"></div>
+        <div class="threshold-row"><label>湿度下限 (%)</label><input type="number" id="th-humi-min" value="20" onchange="saveThresholds()"></div>
+        <div class="threshold-row"><label>烟雾上限 (ADC)</label><input type="number" id="th-smoke-max" value="500" onchange="saveThresholds()"></div>
+        <div class="threshold-row"><label>心率上限 (BPM)</label><input type="number" id="th-hr-max" value="120" onchange="saveThresholds()"></div>
+        <div class="threshold-row"><label>心率下限 (BPM)</label><input type="number" id="th-hr-min" value="50" onchange="saveThresholds()"></div>
+        <div class="threshold-row"><label>血氧下限 (%)</label><input type="number" id="th-spo2-min" value="90" onchange="saveThresholds()"></div>
+      </div>
+    </div>
+    <div class="alerts-right">
+      <div class="alert-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <h3>&#128276; 最近警告</h3>
+          <button class="alert-clear-btn" onclick="clearAlerts()">清除</button>
+        </div>
+        <div id="alertList" class="alert-list">
+          <div class="alert-empty">暂无警告</div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- 视觉监控 -->
@@ -347,6 +399,75 @@ function exportCharts() {
 }
 
 /* ================================================================
+   阈值与报警
+   ================================================================ */
+var DEFAULT_THRESHOLDS = { 'temp-max':40,'temp-min':10,'humi-max':80,'humi-min':20,'smoke-max':500,'hr-max':120,'hr-min':50,'spo2-min':90 };
+var thresholds = {};
+var alerts = [];
+var MAX_ALERTS = 50;
+var lastAlertTime = {};
+
+function loadThresholds() {
+  try { thresholds = JSON.parse(localStorage.getItem('sg_thresholds')) || {}; } catch(e) { thresholds = {}; }
+  for (var k in DEFAULT_THRESHOLDS) { if (!(k in thresholds)) thresholds[k] = DEFAULT_THRESHOLDS[k]; }
+  for (var k in thresholds) { var el = document.getElementById('th-' + k); if (el) el.value = thresholds[k]; }
+  try { alerts = JSON.parse(localStorage.getItem('sg_alerts')) || []; } catch(e) { alerts = []; }
+  renderAlerts();
+}
+
+function saveThresholds() {
+  for (var k in DEFAULT_THRESHOLDS) { var el = document.getElementById('th-' + k); if (el) thresholds[k] = Number(el.value); }
+  localStorage.setItem('sg_thresholds', JSON.stringify(thresholds));
+}
+
+function addAlert(level, msg) {
+  var now = Date.now();
+  var key = msg;
+  if (lastAlertTime[key] && now - lastAlertTime[key] < 10000) return;
+  lastAlertTime[key] = now;
+  var t = new Date();
+  var timeStr = t.getHours().toString().padStart(2,'0') + ':' + t.getMinutes().toString().padStart(2,'0') + ':' + t.getSeconds().toString().padStart(2,'0');
+  alerts.unshift({ level: level, msg: msg, time: timeStr });
+  if (alerts.length > MAX_ALERTS) alerts.length = MAX_ALERTS;
+  localStorage.setItem('sg_alerts', JSON.stringify(alerts));
+  renderAlerts();
+}
+
+function renderAlerts() {
+  var el = document.getElementById('alertList');
+  if (!el) return;
+  if (alerts.length === 0) { el.innerHTML = '<div class="alert-empty">暂无警告</div>'; return; }
+  var html = '';
+  for (var i = 0; i < alerts.length; i++) {
+    html += '<div class="alert-item"><div class="alert-dot ' + alerts[i].level + '"></div><div class="alert-msg">' + alerts[i].msg + '</div><div class="alert-time">' + alerts[i].time + '</div></div>';
+  }
+  el.innerHTML = html;
+}
+
+function clearAlerts() {
+  alerts = [];
+  localStorage.setItem('sg_alerts', JSON.stringify(alerts));
+  renderAlerts();
+}
+
+function checkThresholds(d) {
+  if (d.temperature != null) {
+    if (d.temperature > thresholds['temp-max']) addAlert('danger', '温度过高: ' + Number(d.temperature).toFixed(1) + '°C (上限' + thresholds['temp-max'] + '°C)');
+    if (d.temperature < thresholds['temp-min']) addAlert('danger', '温度过低: ' + Number(d.temperature).toFixed(1) + '°C (下限' + thresholds['temp-min'] + '°C)');
+  }
+  if (d.humidity != null) {
+    if (d.humidity > thresholds['humi-max']) addAlert('warn', '湿度过高: ' + Number(d.humidity).toFixed(1) + '% (上限' + thresholds['humi-max'] + '%)');
+    if (d.humidity < thresholds['humi-min']) addAlert('warn', '湿度过低: ' + Number(d.humidity).toFixed(1) + '% (下限' + thresholds['humi-min'] + '%)');
+  }
+  if (d.raw_smoke != null && d.raw_smoke > thresholds['smoke-max']) addAlert('danger', '烟雾超标: ' + d.raw_smoke + ' ADC (上限' + thresholds['smoke-max'] + ')');
+  if (d.finger_detected && d.heart_rate != null) {
+    if (d.heart_rate > thresholds['hr-max']) addAlert('danger', '心率过高: ' + d.heart_rate + ' BPM (上限' + thresholds['hr-max'] + ')');
+    if (d.heart_rate < thresholds['hr-min']) addAlert('danger', '心率过低: ' + d.heart_rate + ' BPM (下限' + thresholds['hr-min'] + ')');
+  }
+  if (d.finger_detected && d.spO2 != null && d.spO2 < thresholds['spo2-min']) addAlert('danger', '血氧过低: ' + d.spO2 + '% (下限' + thresholds['spo2-min'] + '%)');
+}
+
+/* ================================================================
    卡片状态
    ================================================================ */
 function setCardState(id, level) { var c = document.getElementById(id); if(!c)return; c.classList.remove('warning','danger'); if(level==='warning')c.classList.add('warning'); if(level==='danger')c.classList.add('danger'); }
@@ -471,6 +592,7 @@ function updateUI(d) {
     sensorHistory.gas.shift(); sensorHistory.hr.shift(); sensorHistory.spo2.shift();
   }
   updateChartDisplay();
+  checkThresholds(d);
 }
 
 /* ================================================================
@@ -488,6 +610,7 @@ function doLogin() {
     document.getElementById('loginErr').textContent = '';
     initMap();
     initCharts();
+    loadThresholds();
     fetchData();
     setInterval(fetchData, 3000);
   } else {
@@ -515,6 +638,7 @@ if (localStorage.getItem('sg_logged_in') === '1') {
   document.getElementById('loginOverlay').style.display = 'none';
   initMap();
   initCharts();
+  loadThresholds();
   fetchData();
   setInterval(fetchData, 3000);
 }
