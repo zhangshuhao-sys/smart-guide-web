@@ -342,7 +342,7 @@ var trackVisible = true, satelliteMode = false;
 var cHr, cEnv, cGas;
 var deviceOnline = false;
 var offlineTimer = null;
-var DEVICE_OFFLINE_TIMEOUT = 10000;
+var DEVICE_OFFLINE_TIMEOUT = 5000;
 
 /* ================================================================
    Tab 切换
@@ -555,13 +555,13 @@ function fetchData() {
         if (data.update_time && data.update_time !== lastDataTime) {
           lastDataTime = data.update_time;
           updateUI(data);
+          setDeviceOnline(true);
+          resetOfflineTimer();
+          document.getElementById('connDot').classList.add('online');
+          document.getElementById('connText').textContent = '设备在线';
+          document.getElementById('topStatus').textContent = '最后更新: ' + data.update_time;
+          document.getElementById('topStatus').className = 'status ok';
         }
-        setDeviceOnline(true);
-        resetOfflineTimer();
-        document.getElementById('connDot').classList.add('online');
-        document.getElementById('connText').textContent = '设备在线';
-        document.getElementById('topStatus').textContent = '最后更新: ' + (data.update_time || '--');
-        document.getElementById('topStatus').className = 'status ok';
       } catch(e) {
         console.error('JSON解析失败', e);
       }
