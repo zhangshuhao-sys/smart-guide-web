@@ -29,14 +29,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 .topbar h1{font-size:15px;font-weight:700}
 .topbar .status{font-size:12px;color:var(--text3)}
 .topbar .status.ok{color:var(--success)}
+.topbar .status.offline{color:var(--danger)}
 .content{flex:1;padding:20px 32px;max-width:1100px;margin:0 auto;width:100%}
 .tab-panel{display:none}.tab-panel.active{display:block}
 .sensor-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
-.sensor-card{background:var(--card);border-radius:14px;padding:20px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:transform 0.15s,box-shadow 0.15s;text-align:center}
+.sensor-card{background:var(--card);border-radius:14px;padding:20px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:transform 0.15s,box-shadow 0.15s,opacity 0.3s;text-align:center}
 .sensor-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,0.1)}
 .sensor-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--success);transition:background 0.3s}
 .sensor-card.warning::before{background:var(--warning)}
 .sensor-card.danger::before{background:var(--danger)}
+.sensor-card.offline{opacity:0.4;pointer-events:none}
+.sensor-card.offline::before{background:var(--text3)}
 .card-icon{font-size:28px;margin-bottom:10px}
 .card-label{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
 .card-value{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
@@ -112,6 +115,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 .login-box .login-btn{width:100%;padding:12px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-top:6px;transition:opacity 0.2s}
 .login-box .login-btn:active{opacity:0.8}
 .login-box .login-err{text-align:center;font-size:12px;color:var(--danger);margin-top:10px;min-height:18px}
+.auth-toggle{text-align:center;margin-top:16px;font-size:12px;color:var(--text3)}
+.auth-toggle a{color:var(--primary);cursor:pointer;text-decoration:none;font-weight:600}
+.auth-toggle a:hover{text-decoration:underline}
+.offline-banner{background:linear-gradient(135deg,#ff4d4f,#ff7875);color:#fff;text-align:center;padding:14px;border-radius:12px;font-size:15px;font-weight:700;margin-bottom:18px;display:none;box-shadow:0 4px 16px rgba(255,77,79,0.3)}
+.offline-banner .offline-icon{font-size:20px;margin-right:8px;vertical-align:middle}
 .logout-btn{display:flex;align-items:center;gap:8px;width:100%;padding:10px 20px;border:none;background:none;color:rgba(255,255,255,0.4);font-size:12px;cursor:pointer;transition:all 0.2s;text-align:left;border-top:1px solid rgba(255,255,255,0.08)}
 .logout-btn:hover{color:rgba(255,255,255,0.7)}
 .logout-btn .nav-icon{font-size:16px}
@@ -119,21 +127,45 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 </head>
 <body>
 
-<!-- 登录界面 -->
+<!-- 登录/注册界面 -->
 <div class="login-overlay" id="loginOverlay">
   <div class="login-box">
     <h2>&#128301; 智能导盲</h2>
     <div class="login-sub">Smart Blind Guide System</div>
-    <div class="field">
-      <label>账号</label>
-      <input type="text" id="loginUser" placeholder="请输入账号" autocomplete="off">
+
+    <!-- 登录表单 -->
+    <div id="loginForm">
+      <div class="field">
+        <label>账号</label>
+        <input type="text" id="loginUser" placeholder="请输入账号" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>密码</label>
+        <input type="password" id="loginPass" placeholder="请输入密码">
+      </div>
+      <button class="login-btn" onclick="doLogin()">登 录</button>
+      <div class="login-err" id="loginErr"></div>
+      <div class="auth-toggle">没有账号？<a onclick="showRegister()">去注册</a></div>
     </div>
-    <div class="field">
-      <label>密码</label>
-      <input type="password" id="loginPass" placeholder="请输入密码">
+
+    <!-- 注册表单 -->
+    <div id="registerForm" style="display:none">
+      <div class="field">
+        <label>账号</label>
+        <input type="text" id="regUser" placeholder="请输入账号" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>密码</label>
+        <input type="password" id="regPass" placeholder="请输入密码">
+      </div>
+      <div class="field">
+        <label>确认密码</label>
+        <input type="password" id="regPassConfirm" placeholder="请再次输入密码">
+      </div>
+      <button class="login-btn" onclick="doRegister()">注 册</button>
+      <div class="login-err" id="regErr"></div>
+      <div class="auth-toggle">已有账号？<a onclick="showLogin()">去登录</a></div>
     </div>
-    <button class="login-btn" onclick="doLogin()">登 录</button>
-    <div class="login-err" id="loginErr"></div>
   </div>
 </div>
 
@@ -168,6 +200,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <div class="content">
 <!-- 仪表盘 -->
 <div class="tab-panel active" id="panel-dashboard">
+  <div class="offline-banner" id="offlineBanner"><span class="offline-icon">&#9888;</span>设备不在线 - 等待连接...</div>
   <div class="sensor-grid">
     <div class="sensor-card" id="card-temp"><div class="card-icon">&#127777;&#65039;</div><div class="card-label">温度</div><div class="card-value" id="val-temp">--</div><div class="card-sub">°C</div></div>
     <div class="sensor-card" id="card-humi"><div class="card-icon">&#128167;</div><div class="card-label">湿度</div><div class="card-value" id="val-humi">--</div><div class="card-sub">%</div></div>
@@ -307,6 +340,9 @@ var MAX_HISTORY = 500;
 var fullMap, fullMarker, trackLine, trackPoints = [];
 var trackVisible = true, satelliteMode = false;
 var cHr, cEnv, cGas;
+var deviceOnline = false;
+var offlineTimer = null;
+var DEVICE_OFFLINE_TIMEOUT = 10000;
 
 /* ================================================================
    Tab 切换
@@ -477,6 +513,33 @@ function setColor(id, color) { var el = document.getElementById(id); if(el) el.s
 function setText(id, text) { var el = document.getElementById(id); if(el) el.textContent = text; }
 
 /* ================================================================
+   设备在线/离线控制
+   ================================================================ */
+function setDeviceOnline(online) {
+  deviceOnline = online;
+  var banner = document.getElementById('offlineBanner');
+  var cards = ['card-temp','card-humi','card-gas','card-hr','card-spo2','card-presence'];
+  if (online) {
+    banner.style.display = 'none';
+    cards.forEach(function(id){ document.getElementById(id).classList.remove('offline'); });
+  } else {
+    banner.style.display = 'block';
+    cards.forEach(function(id){ document.getElementById(id).classList.add('offline'); });
+    ['val-temp','val-humi','val-gas','val-hr','val-spo2','val-presence','loc-lat','loc-lng','loc-time','motion-status','motion-shake','accel-x','accel-y','accel-z','gyro-x','gyro-y','gyro-z','finger-status'].forEach(function(id){ setText(id, '--'); });
+    setText('loc-status', '未定位');
+    document.getElementById('connDot').classList.remove('online');
+    document.getElementById('connText').textContent = '设备离线';
+    document.getElementById('topStatus').textContent = '设备不在线';
+    document.getElementById('topStatus').className = 'status offline';
+  }
+}
+
+function resetOfflineTimer() {
+  if (offlineTimer) clearTimeout(offlineTimer);
+  offlineTimer = setTimeout(function(){ setDeviceOnline(false); }, DEVICE_OFFLINE_TIMEOUT);
+}
+
+/* ================================================================
    核心：每3秒从OBS拉取数据
    ================================================================ */
 var lastDataTime = '';
@@ -493,8 +556,10 @@ function fetchData() {
           lastDataTime = data.update_time;
           updateUI(data);
         }
+        setDeviceOnline(true);
+        resetOfflineTimer();
         document.getElementById('connDot').classList.add('online');
-        document.getElementById('connText').textContent = '数据正常';
+        document.getElementById('connText').textContent = '设备在线';
         document.getElementById('topStatus').textContent = '最后更新: ' + (data.update_time || '--');
         document.getElementById('topStatus').className = 'status ok';
       } catch(e) {
@@ -503,10 +568,10 @@ function fetchData() {
     }
   };
   xhr.onerror = function() {
-    document.getElementById('connDot').classList.remove('online');
-    document.getElementById('connText').textContent = '读取失败';
-    document.getElementById('topStatus').textContent = '无法连接OBS';
-    document.getElementById('topStatus').className = 'status';
+    setDeviceOnline(false);
+  };
+  xhr.ontimeout = function() {
+    setDeviceOnline(false);
   };
   xhr.send();
 }
@@ -598,23 +663,58 @@ function updateUI(d) {
 }
 
 /* ================================================================
-   登录/退出
+   登录/注册/退出
    ================================================================ */
-var VALID_USER = 'qwertyu';
-var VALID_PASS = '123456';
+function getUsers() {
+  try { return JSON.parse(localStorage.getItem('sg_users')) || {}; } catch(e) { return {}; }
+}
+function saveUsers(users) {
+  localStorage.setItem('sg_users', JSON.stringify(users));
+}
+
+// 初始化默认账号
+(function(){
+  var users = getUsers();
+  if (!users['qwertyu']) { users['qwertyu'] = '123456'; saveUsers(users); }
+})();
+
+function showRegister() {
+  document.getElementById('loginForm').style.display = 'none';
+  document.getElementById('registerForm').style.display = 'block';
+  document.getElementById('regErr').textContent = '';
+}
+function showLogin() {
+  document.getElementById('registerForm').style.display = 'none';
+  document.getElementById('loginForm').style.display = 'block';
+  document.getElementById('loginErr').textContent = '';
+}
+
+function doRegister() {
+  var u = document.getElementById('regUser').value.trim();
+  var p = document.getElementById('regPass').value;
+  var pc = document.getElementById('regPassConfirm').value;
+  var errEl = document.getElementById('regErr');
+  if (!u || !p) { errEl.textContent = '请填写完整信息'; return; }
+  if (p !== pc) { errEl.textContent = '两次密码不一致'; return; }
+  if (p.length < 4) { errEl.textContent = '密码至少4位'; return; }
+  var users = getUsers();
+  if (users[u]) { errEl.textContent = '账号已存在'; return; }
+  users[u] = p;
+  saveUsers(users);
+  localStorage.setItem('sg_logged_in', '1');
+  document.getElementById('loginOverlay').style.display = 'none';
+  startApp();
+}
 
 function doLogin() {
   var u = document.getElementById('loginUser').value;
   var p = document.getElementById('loginPass').value;
-  if (u === VALID_USER && p === VALID_PASS) {
+  var users = getUsers();
+  if (users[u] && users[u] === p) {
     localStorage.setItem('sg_logged_in', '1');
     document.getElementById('loginOverlay').style.display = 'none';
     document.getElementById('loginErr').textContent = '';
-    initMap();
-    initCharts();
-    loadThresholds();
-    fetchData();
-    setInterval(fetchData, 3000);
+    startApp();
   } else {
     document.getElementById('loginErr').textContent = '账号或密码错误';
   }
@@ -625,24 +725,29 @@ function doLogout() {
   location.reload();
 }
 
-// 回车键登录
-document.getElementById('loginPass').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') doLogin();
-});
-document.getElementById('loginUser').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') document.getElementById('loginPass').focus();
-});
+function startApp() {
+  initMap();
+  initCharts();
+  loadThresholds();
+  setDeviceOnline(false);
+  fetchData();
+  setInterval(fetchData, 3000);
+}
+
+// 回车键
+var loginPassEl = document.getElementById('loginPass');
+var loginUserEl = document.getElementById('loginUser');
+if (loginPassEl) loginPassEl.addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin(); });
+if (loginUserEl) loginUserEl.addEventListener('keydown', function(e) { if (e.key === 'Enter') document.getElementById('loginPass').focus(); });
+var regPassConfirmEl = document.getElementById('regPassConfirm');
+if (regPassConfirmEl) regPassConfirmEl.addEventListener('keydown', function(e) { if (e.key === 'Enter') doRegister(); });
 
 /* ================================================================
    启动
    ================================================================ */
 if (localStorage.getItem('sg_logged_in') === '1') {
   document.getElementById('loginOverlay').style.display = 'none';
-  initMap();
-  initCharts();
-  loadThresholds();
-  fetchData();
-  setInterval(fetchData, 3000);
+  startApp();
 }
 </script>
 </body>
