@@ -42,7 +42,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 .sensor-card.danger::before{background:var(--danger)}
 .sensor-card.offline{opacity:0.4;pointer-events:none}
 .sensor-card.offline::before{background:var(--text3)}
-.card-icon{font-size:28px;margin-bottom:10px}
 .card-label{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
 .card-value{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
 .card-sub{font-size:11px;color:var(--text3);margin-top:4px}
@@ -107,6 +106,30 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
   .cam-grid{grid-template-columns:1fr}.cam-preview{height:220px}
 }
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.1);border-radius:4px}
+/* 综合安全评分卡片 */
+.safety-card{background:linear-gradient(135deg,#fff 0%,#f8fafc 100%);border-radius:16px;padding:24px;box-shadow:0 2px 16px rgba(0,0,0,0.06);display:flex;align-items:center;gap:32px;margin-bottom:16px;flex-wrap:wrap}
+.safety-ring-wrap{position:relative;width:120px;height:120px;flex-shrink:0}
+.safety-ring{width:120px;height:120px;transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:#f0f0f0;stroke-width:8}
+.ring-fill{fill:none;stroke:#52c41a;stroke-width:8;stroke-linecap:round;stroke-dasharray:326.7;stroke-dashoffset:0;transition:stroke-dashoffset 0.6s ease,stroke 0.3s}
+.safety-score{position:absolute;top:50%;left:50%;transform:translate(-50%,-60%);font-size:32px;font-weight:700;color:#52c41a;transition:color 0.3s}
+.safety-label{position:absolute;top:50%;left:50%;transform:translate(-50%,40%);font-size:11px;color:var(--text2)}
+.safety-details{display:flex;flex-wrap:wrap;gap:10px 24px;flex:1;min-width:200px}
+.safety-item{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2)}
+.safety-item .dot{width:8px;height:8px;border-radius:50%;background:#52c41a;transition:background 0.3s}
+.safety-item.warning .dot{background:#faad14}
+.safety-item.danger .dot{background:#ff4d4f}
+.safety-item.off .dot{background:#d9d9d9}
+.safety-summary{font-size:14px;font-weight:500;color:#52c41a;min-width:120px;text-align:right;transition:color 0.3s}
+/* 传感器卡片图标圆形背景 */
+.card-icon{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:26px}
+#card-temp .card-icon{background:linear-gradient(135deg,#fff1f0,#ffe7e7)}
+#card-humi .card-icon{background:linear-gradient(135deg,#e6f7ff,#bae7ff)}
+#card-gas .card-icon{background:linear-gradient(135deg,#fff7e6,#ffe7ba)}
+#card-hr .card-icon{background:linear-gradient(135deg,#fff1f0,#ffe7e7)}
+#card-spo2 .card-icon{background:linear-gradient(135deg,#e6fffb,#b5f5ec)}
+#card-presence .card-icon{background:linear-gradient(135deg,#f6ffed,#d9f7be)}
+@media(max-width:768px){.safety-card{gap:16px;padding:16px}.safety-details{gap:8px 14px}}
 .login-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#1d1d2b 0%,#2d1b69 100%);display:flex;align-items:center;justify-content:center;z-index:9999}
 .login-box{background:#fff;border-radius:16px;padding:40px 36px;width:360px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
 .login-box h2{text-align:center;font-size:22px;font-weight:700;margin-bottom:6px;color:var(--text)}
@@ -213,6 +236,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <!-- 仪表盘 -->
 <div class="tab-panel active" id="panel-dashboard">
   <div class="offline-banner" id="offlineBanner"><span class="offline-icon">&#9888;</span>设备不在线 - 等待连接...</div>
+  <div class="safety-card">
+    <div class="safety-ring-wrap">
+      <svg class="safety-ring" viewBox="0 0 120 120">
+        <circle class="ring-bg" cx="60" cy="60" r="52"/>
+        <circle class="ring-fill" cx="60" cy="60" r="52" id="safetyRing"/>
+      </svg>
+      <div class="safety-score" id="safetyScore">--</div>
+      <div class="safety-label">安全评分</div>
+    </div>
+    <div class="safety-details" id="safetyDetails">
+      <div class="safety-item off"><span class="dot"></span>温度</div>
+      <div class="safety-item off"><span class="dot"></span>湿度</div>
+      <div class="safety-item off"><span class="dot"></span>烟雾</div>
+      <div class="safety-item off"><span class="dot"></span>心率</div>
+      <div class="safety-item off"><span class="dot"></span>血氧</div>
+      <div class="safety-item off"><span class="dot"></span>环境</div>
+    </div>
+    <div class="safety-summary" id="safetySummary">等待数据</div>
+  </div>
   <div class="sensor-grid">
     <div class="sensor-card" id="card-temp"><div class="card-icon">&#127777;&#65039;</div><div class="card-label">温度</div><div class="card-value" id="val-temp">--</div><div class="card-sub">°C</div></div>
     <div class="sensor-card" id="card-humi"><div class="card-icon">&#128167;</div><div class="card-label">湿度</div><div class="card-value" id="val-humi">--</div><div class="card-sub">%</div></div>
@@ -664,6 +706,49 @@ function checkThresholds(d) {
 function setCardState(id, level) { var c = document.getElementById(id); if(!c)return; c.classList.remove('warning','danger'); if(level==='warning')c.classList.add('warning'); if(level==='danger')c.classList.add('danger'); }
 function setColor(id, color) { var el = document.getElementById(id); if(el) el.style.color = color; }
 function setText(id, text) { var el = document.getElementById(id); if(el) el.textContent = text; }
+function setItem(el, level) { el.className = 'safety-item ' + level; }
+
+/* 安全评分 */
+function updateSafetyScore(d) {
+  var score = 100;
+  var issues = [];
+  var items = document.querySelectorAll('#safetyDetails .safety-item');
+  // 温度
+  if (d.temperature > 45) { score -= 30; setItem(items[0], 'danger'); issues.push('温度过高'); }
+  else if (d.temperature > 35 || d.temperature < 10) { score -= 10; setItem(items[0], 'warning'); issues.push('温度异常'); }
+  else { setItem(items[0], 'ok'); }
+  // 湿度
+  if (d.humidity > 80 || d.humidity < 20) { score -= 10; setItem(items[1], 'warning'); issues.push('湿度异常'); }
+  else { setItem(items[1], 'ok'); }
+  // 烟雾
+  if (d.raw_smoke > 600) { score -= 30; setItem(items[2], 'danger'); issues.push('烟雾浓度过高'); }
+  else if (d.raw_smoke > 300) { score -= 10; setItem(items[2], 'warning'); issues.push('烟雾偏高'); }
+  else { setItem(items[2], 'ok'); }
+  // 心率
+  if (d.finger_detected) {
+    if (d.heart_rate > 140 || d.heart_rate < 40) { score -= 20; setItem(items[3], 'danger'); issues.push('心率异常'); }
+    else { setItem(items[3], 'ok'); }
+  } else { setItem(items[3], 'off'); }
+  // 血氧
+  if (d.finger_detected) {
+    if (d.spO2 < 90) { score -= 20; setItem(items[4], 'danger'); issues.push('血氧过低'); }
+    else { setItem(items[4], 'ok'); }
+  } else { setItem(items[4], 'off'); }
+  // 人体感应
+  if (d.presence) { setItem(items[5], 'ok'); }
+  else { setItem(items[5], 'off'); }
+
+  score = Math.max(0, score);
+  var ring = document.getElementById('safetyRing');
+  var circumference = 326.7;
+  ring.style.strokeDashoffset = circumference * (1 - score / 100);
+  var color = score >= 80 ? '#52c41a' : score >= 50 ? '#faad14' : '#ff4d4f';
+  ring.style.stroke = color;
+  document.getElementById('safetyScore').textContent = score;
+  document.getElementById('safetyScore').style.color = color;
+  document.getElementById('safetySummary').textContent = issues.length ? issues.join('、') : '一切正常';
+  document.getElementById('safetySummary').style.color = issues.length ? '#ff4d4f' : '#52c41a';
+}
 
 /* ================================================================
    设备在线/离线控制
@@ -684,6 +769,15 @@ function setDeviceOnline(online) {
     document.getElementById('connText').textContent = '设备离线';
     document.getElementById('topStatus').textContent = '设备不在线';
     document.getElementById('topStatus').className = 'status offline';
+    // 重置安全评分
+    document.getElementById('safetyScore').textContent = '--';
+    document.getElementById('safetyScore').style.color = '#9ca3af';
+    document.getElementById('safetyRing').style.strokeDashoffset = 326.7;
+    document.getElementById('safetyRing').style.stroke = '#d9d9d9';
+    document.getElementById('safetySummary').textContent = '设备离线';
+    document.getElementById('safetySummary').style.color = '#9ca3af';
+    var items = document.querySelectorAll('#safetyDetails .safety-item');
+    for (var i = 0; i < items.length; i++) setItem(items[i], 'off');
   }
 }
 
@@ -814,6 +908,7 @@ function updateUI(d) {
     sensorHistory.gas.shift(); sensorHistory.hr.shift(); sensorHistory.spo2.shift();
   }
   updateChartDisplay();
+  updateSafetyScore(d);
   checkThresholds(d);
 }
 
