@@ -27,17 +27,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 .conn-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff4d4f;margin-right:6px;vertical-align:middle}
 .conn-dot.online{background:#52c41a;box-shadow:0 0 6px rgba(82,196,26,0.5)}
 .main{margin-left:var(--sidebar-w);flex:1;min-height:100vh;display:flex;flex-direction:column}
-.topbar{background:#fff;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e5e7eb;position:sticky;top:0;z-index:100}
-.topbar h1{font-size:15px;font-weight:700}
-.topbar .status{font-size:12px;color:var(--text3)}
-.topbar .status.ok{color:var(--success)}
-.topbar .status.offline{color:var(--danger)}
+.topbar{background:#1d1d2b;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.08);position:sticky;top:0;z-index:100;color:#fff}
+.topbar h1{font-size:15px;font-weight:700;color:#fff}
+.topbar .status{font-size:12px;color:rgba(255,255,255,0.5)}
+.topbar .status.ok{color:#52c41a}
+.topbar .status.offline{color:#ff4d4f}
 .content{flex:1;padding:20px 32px;max-width:1100px;margin:0 auto;width:100%}
 .tab-panel{display:none}.tab-panel.active{display:block}
 .sensor-grid{display:grid;gap:14px;margin-bottom:14px}
 .sensor-grid-4{grid-template-columns:repeat(4,1fr)}
 .sensor-grid-2{grid-template-columns:repeat(2,1fr)}
-.sensor-card-wide{grid-column:span 2}
 .sensor-card{background:var(--card);border-radius:12px;padding:14px 12px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:transform 0.15s,box-shadow 0.15s,opacity 0.3s;text-align:center}
 .sensor-card{background:var(--card);border-radius:14px;padding:20px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:transform 0.15s,box-shadow 0.15s,opacity 0.3s;text-align:center}
 .sensor-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,0.1)}
@@ -131,7 +130,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 @media(max-width:768px){
   .sidebar{width:56px}.sidebar-header h2,.sidebar-header .sub,.nav-item span:not(.nav-icon){display:none}
   .sidebar-header{padding:12px 0;text-align:center}.nav-item{justify-content:center;padding:12px 0}
-  .main{margin-left:56px}.sensor-grid-4{grid-template-columns:repeat(2,1fr)}.sensor-card-wide{grid-column:span 1}.dash-row{grid-template-columns:1fr}.dash-row-4{grid-template-columns:1fr}.loc-btns{grid-template-columns:repeat(2,1fr)}.dash-row-1 .dash-section{max-width:100%}
+  .main{margin-left:56px}.sensor-grid-4{grid-template-columns:repeat(2,1fr)}.dash-row{grid-template-columns:1fr}.dash-row-4{grid-template-columns:1fr}.loc-btns{grid-template-columns:repeat(2,1fr)}.dash-row-1 .dash-section{max-width:100%}
   .content{padding:14px 12px}.card-value{font-size:22px}.card-icon{font-size:22px}
   .cam-grid{grid-template-columns:1fr}.cam-preview{height:220px}
 }
@@ -314,10 +313,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
     <div class="sensor-card" id="card-gas"><div class="card-icon">&#128293;</div><div class="card-label">烟雾</div><div class="card-value" id="val-gas">--</div><div class="card-sub">ADC</div></div>
     <div class="sensor-card" id="card-temp"><div class="card-icon">&#127777;&#65039;</div><div class="card-label">温度</div><div class="card-value" id="val-temp">--</div><div class="card-sub">°C</div></div>
   </div>
-  <!-- 第2行：湿度 人体感应（4列网格，与上行对齐） -->
+  <!-- 第2行：湿度 对齐心率，人体感应 对齐血氧 -->
   <div class="sensor-grid sensor-grid-4">
-    <div class="sensor-card sensor-card-wide" id="card-humi"><div class="card-icon">&#128167;</div><div class="card-label">湿度</div><div class="card-value" id="val-humi">--</div><div class="card-sub">%</div></div>
-    <div class="sensor-card sensor-card-wide" id="card-presence"><div class="card-icon">&#128101;</div><div class="card-label">人体感应</div><div class="card-value" id="val-presence">--</div><div class="card-sub">LD2410B</div></div>
+    <div class="sensor-card" id="card-humi"><div class="card-icon">&#128167;</div><div class="card-label">湿度</div><div class="card-value" id="val-humi">--</div><div class="card-sub">%</div></div>
+    <div class="sensor-card" id="card-presence"><div class="card-icon">&#128101;</div><div class="card-label">人体感应</div><div class="card-value" id="val-presence">--</div><div class="card-sub">LD2410B</div></div>
   </div>
   <!-- 第3行：实时位置 运动状态 天气 最近报警（4列） -->
   <div class="dash-row dash-row-4">
