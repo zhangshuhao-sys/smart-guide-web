@@ -4,8 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <title>智能导盲系统 - 云端监控</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- 配置文件（本地存在，.gitignore 忽略，部署时上传） -->
+<script src="config.js"></script>
+<!-- 动态加载高德SDK（key从config.js读取） -->
+<script>
+(function(){
+  if(typeof AMAP_JS_KEY!=='undefined'&&AMAP_JS_KEY){
+    window._AMapSecurityConfig={securityJsCode:typeof AMAP_SECRET!=='undefined'?AMAP_SECRET:''};
+    var s=document.createElement('script');
+    s.src='https://webapi.amap.com/maps?v=2.0&key='+AMAP_JS_KEY;
+    document.head.appendChild(s);
+  }
+})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -225,6 +236,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
       <div class="loc-info">
         <div class="row"><span class="lbl">纬度</span><span class="val" id="loc-lat">--</span></div>
         <div class="row"><span class="lbl">经度</span><span class="val" id="loc-lng">--</span></div>
+        <div class="row"><span class="lbl">位置</span><span class="val" id="loc-addr">--</span></div>
         <div class="row"><span class="lbl">状态</span><span class="val" id="loc-status">未定位</span></div>
         <div class="row"><span class="lbl">更新时间</span><span class="val" id="loc-time">--</span></div>
       </div>
@@ -240,12 +252,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
       </div>
     </div>
     <div class="dash-section">
-      <h3>&#128736; 陀螺仪</h3>
+      <h3>&#9728;&#65039; 当前天气</h3>
       <div class="loc-info">
-        <div class="row"><span class="lbl">X轴</span><span class="val" id="gyro-x">--</span></div>
-        <div class="row"><span class="lbl">Y轴</span><span class="val" id="gyro-y">--</span></div>
-        <div class="row"><span class="lbl">Z轴</span><span class="val" id="gyro-z">--</span></div>
-        <div class="row"><span class="lbl">手指检测</span><span class="val" id="finger-status">--</span></div>
+        <div class="row"><span class="lbl">天气</span><span class="val" id="weather-desc">--</span></div>
+        <div class="row"><span class="lbl">温度</span><span class="val" id="weather-temp">--</span></div>
+        <div class="row"><span class="lbl">风向风力</span><span class="val" id="weather-wind">--</span></div>
+        <div class="row"><span class="lbl">湿度</span><span class="val" id="weather-humi">--</span></div>
+        <div class="row"><span class="lbl">更新</span><span class="val" id="weather-time">--</span></div>
       </div>
     </div>
   </div>
@@ -354,9 +367,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 
 <script>
 /* ================================================================
-   ★★★ 配置区 - 改成你的OBS桶地址 ★★★
+   ★★★ 配置区 ★★★
    ================================================================ */
 var OBS_BASE = 'https://smart-guide-data.obs.cn-north-4.myhuaweicloud.com';
+// AMAP_KEY, AMAP_JS_KEY, AMAP_SECRET, QWEATHER_HOST, QWEATHER_KEY 定义在 config.js
 
 /* ================================================================
    全局状态
@@ -370,6 +384,9 @@ var cHr, cEnv, cGas;
 var deviceOnline = false;
 var offlineTimer = null;
 var DEVICE_OFFLINE_TIMEOUT = 5000;
+var lastGeoLat = null, lastGeoLng = null, cachedAddr = '--', cachedCityCode = null;
+var lastWeatherFetch = 0;
+var WEATHER_INTERVAL_MS = 5 * 60 * 1000;
 
 /* ================================================================
    Tab 切换
@@ -379,32 +396,147 @@ function switchTab(name, btn) {
   document.querySelectorAll('.nav-item').forEach(function(b){ b.classList.remove('active'); });
   document.getElementById('panel-' + name).classList.add('active');
   btn.classList.add('active');
-  if (name === 'location' && fullMap) setTimeout(function(){ fullMap.invalidateSize(); }, 200);
+  if (name === 'location' && fullMap) setTimeout(function(){ fullMap.resize(); }, 200);
 }
 
 /* ================================================================
-   地图
+   地图 (高德 JS SDK)
    ================================================================ */
 function initMap() {
-  fullMap = L.map('fullMap', { zoomControl: false }).setView([30.57, 104.07], 15);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(fullMap);
-  L.control.zoom({ position: 'topright' }).addTo(fullMap);
-  fullMarker = L.marker([30.57, 104.07], {
-    icon: L.divIcon({ className:'', html:'<div style="width:16px;height:16px;background:#1677ff;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(22,119,255,0.4)"></div>', iconSize:[16,16], iconAnchor:[8,8] })
-  }).addTo(fullMap);
-  trackLine = L.polyline([], { color:'#1677ff', weight:3, opacity:0.6 }).addTo(fullMap);
+  fullMap = new AMap.Map('fullMap', {
+    zoom: 15,
+    center: [104.07, 30.57],
+    zooms: [3, 20]
+  });
+  fullMarker = new AMap.Marker({
+    map: fullMap,
+    position: [104.07, 30.57],
+    offset: new AMap.Pixel(-8, -8),
+    content: '<div style="width:16px;height:16px;background:#1677ff;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(22,119,255,0.4)"></div>'
+  });
+  trackLine = new AMap.Polyline({
+    map: fullMap,
+    path: [],
+    strokeColor: '#1677ff',
+    strokeWeight: 3,
+    strokeOpacity: 0.6
+  });
 }
-function locCenter() { if (trackPoints.length > 0) fullMap.setView(trackPoints[trackPoints.length-1], 17); }
-function locToggleTrack() { trackVisible = !trackVisible; if (trackLine) trackLine.setStyle({ opacity: trackVisible ? 0.6 : 0 }); }
-function locClearTrack() { trackPoints = []; if (trackLine) trackLine.setLatLngs([]); }
+function locCenter() { if (trackPoints.length > 0) fullMap.setCenter(trackPoints[trackPoints.length-1], 17); }
+function locToggleTrack() { trackVisible = !trackVisible; if (trackLine) trackLine.setOptions({ strokeOpacity: trackVisible ? 0.6 : 0 }); }
+function locClearTrack() { trackPoints = []; if (trackLine) trackLine.setPath([]); }
 function locToggleSatellite() {
   satelliteMode = !satelliteMode;
-  fullMap.eachLayer(function(l){ if (l instanceof L.TileLayer) fullMap.removeLayer(l); });
-  if (satelliteMode) {
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom:19 }).addTo(fullMap);
-  } else {
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(fullMap);
+  fullMap.setMapType(satelliteMode ? 'satellite' : 'normal');
+}
+
+/* ================================================================
+   WGS84 → GCJ-02 坐标转换 (GPS → 高德)
+   ================================================================ */
+function wgs84ToGcj02(lat, lng) {
+  var PI = 3.14159265358979324;
+  var a = 6378245.0, ee = 0.00669342162296594323;
+  function transformLat(x, y) {
+    var ret = -100.0 + 2.0*x + 3.0*y + 0.2*y*y + 0.1*x*y + 0.2*Math.sqrt(Math.abs(x));
+    ret += (20.0*Math.sin(6.0*x*PI) + 20.0*Math.sin(2.0*x*PI)) * 2.0 / 3.0;
+    ret += (20.0*Math.sin(y*PI) + 40.0*Math.sin(y/3.0*PI)) * 2.0 / 3.0;
+    ret += (160.0*Math.sin(y/12.0*PI) + 320*Math.sin(y*PI/30.0)) * 2.0 / 3.0;
+    return ret;
   }
+  function transformLng(x, y) {
+    var ret = 300.0 + x + 2.0*y + 0.1*x*x + 0.1*x*y + 0.1*Math.sqrt(Math.abs(x));
+    ret += (20.0*Math.sin(6.0*x*PI) + 20.0*Math.sin(2.0*x*PI)) * 2.0 / 3.0;
+    ret += (20.0*Math.sin(x*PI) + 40.0*Math.sin(x/3.0*PI)) * 2.0 / 3.0;
+    ret += (150.0*Math.sin(x/12.0*PI) + 300.0*Math.sin(x/30.0*PI)) * 2.0 / 3.0;
+    return ret;
+  }
+  var dLat = transformLat(lng - 105.0, lat - 35.0);
+  var dLng = transformLng(lng - 105.0, lat - 35.0);
+  var radLat = lat / 180.0 * PI;
+  var magic = Math.sin(radLat);
+  magic = 1 - ee * magic * magic;
+  var sqrtMagic = Math.sqrt(magic);
+  dLat = (dLat * 180.0) / ((a * (1 - ee)) / (magic * sqrtMagic) * PI);
+  dLng = (dLng * 180.0) / (a / sqrtMagic * Math.cos(radLat) * PI);
+  return [lat + dLat, lng + dLng];
+}
+
+/* ================================================================
+   高德逆地理编码 (JSONP)
+   ================================================================ */
+var _amapCbId = 0;
+function amapJsonp(url) {
+  return new Promise(function(resolve, reject) {
+    var cbName = '_amapCb' + (++_amapCbId);
+    var timer = setTimeout(function() { cleanup(); reject(new Error('JSONP timeout')); }, 8000);
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+    window[cbName] = function(data) { cleanup(); resolve(data); };
+    var script = document.createElement('script');
+    script.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + cbName;
+    script.onerror = function() { cleanup(); reject(new Error('JSONP error')); };
+    document.head.appendChild(script);
+  });
+}
+
+function fetchAmapLocation(lat, lng) {
+  if (lastGeoLat !== null && Math.abs(lat - lastGeoLat) < 0.001 && Math.abs(lng - lastGeoLng) < 0.001) {
+    setText('loc-addr', cachedAddr);
+    return;
+  }
+  lastGeoLat = lat; lastGeoLng = lng;
+  setText('loc-addr', '查询中...');
+  var url = 'https://restapi.amap.com/v3/geocode/regeo?key=' + AMAP_KEY + '&location=' + lng + ',' + lat + '&s=r6';
+  console.log('[AMAP] regeo URL:', url);
+  amapJsonp(url).then(function(data) {
+    console.log('[AMAP] regeo response:', JSON.stringify(data));
+    if (data.status === '1' && data.regeocode) {
+      cachedAddr = data.regeocode.formatted_address || '--';
+      var cityCode = data.regeocode.addressComponent && data.regeocode.addressComponent.citycode;
+      if (cityCode) cachedCityCode = cityCode;
+      setText('loc-addr', cachedAddr);
+    } else {
+      setText('loc-addr', 'API错误: ' + (data.info || data.infocode || 'unknown'));
+      console.error('[AMAP] regeo failed:', data);
+    }
+  }).catch(function(err) {
+    setText('loc-addr', '网络错误: ' + err.message);
+    console.error('[AMAP] regeo error:', err);
+  });
+}
+
+var QWEATHER_CODES = {'0':'晴','1':'晴','2':'晴','3':'多云','4':'少云','5':'晴间多云','6':'晴间多云','7':'多云','8':'多云','9':'阴','10':'阵雨','11':'雷阵雨','12':'雷阵雨伴有冰雹','13':'小雨','14':'中雨','15':'大雨','16':'暴雨','17':'大暴雨','18':'特大暴雨','19':'冻雨','20':'雨夹雪','21':'阵雪','22':'小雪','23':'中雪','24':'大雪','25':'暴雪','26':'浮尘','27':'扬沙','28':'沙尘暴','29':'强沙尘暴','30':'雾','31':'霾','32':'风','33':'大风','34':'飓风','35':'热带风暴','36':'龙卷风','37':'冷','38':'热','99':'未知'};
+
+function qweatherCodeToText(code) { return QWEATHER_CODES[code] || '未知'; }
+
+function fetchQWeather(lat, lng) {
+  var now = Date.now();
+  if (now - lastWeatherFetch < WEATHER_INTERVAL_MS) return;
+  lastWeatherFetch = now;
+  setText('weather-desc', '查询中...');
+  var loc = Number(lng).toFixed(2) + ',' + Number(lat).toFixed(2);
+  var url = 'https://' + QWEATHER_HOST + '/v7/weather/now?location=' + loc + '&key=' + QWEATHER_KEY;
+  console.log('[QW] weather URL:', url);
+  amapJsonp(url).then(function(data) {
+    console.log('[QW] weather response:', JSON.stringify(data));
+    if (data.code === '200' && data.now) {
+      var w = data.now;
+      setText('weather-desc', qweatherCodeToText(w.text || w.icon));
+      setText('weather-temp', w.temp ? w.temp + '°C' : '--');
+      setText('weather-wind', (w.windDir || '') + ' ' + (w.windScale || '') + '级');
+      setText('weather-humi', w.humidity ? w.humidity + '%' : '--');
+      setText('weather-time', w.obsTime ? w.obsTime.substring(11,16) : '--');
+    } else {
+      setText('weather-desc', 'API错误: ' + (data.code || 'unknown'));
+      console.error('[QW] weather failed:', data);
+    }
+  }).catch(function(err) {
+    setText('weather-desc', '网络错误: ' + err.message);
+    console.error('[QW] weather error:', err);
+  });
 }
 
 /* ================================================================
@@ -552,7 +684,7 @@ function setDeviceOnline(online) {
   } else {
     banner.style.display = 'block';
     cards.forEach(function(id){ document.getElementById(id).classList.add('offline'); });
-    ['val-temp','val-humi','val-gas','val-hr','val-spo2','val-presence','loc-lat','loc-lng','loc-time','motion-status','motion-shake','accel-x','accel-y','accel-z','gyro-x','gyro-y','gyro-z','finger-status'].forEach(function(id){ setText(id, '--'); });
+    ['val-temp','val-humi','val-gas','val-hr','val-spo2','val-presence','loc-lat','loc-lng','loc-addr','loc-time','motion-status','motion-shake','accel-x','accel-y','accel-z','weather-desc','weather-temp','weather-wind','weather-humi','weather-time'].forEach(function(id){ setText(id, '--'); });
     setText('loc-status', '未定位');
     document.getElementById('connDot').classList.remove('online');
     document.getElementById('connText').textContent = '设备离线';
@@ -650,12 +782,6 @@ function updateUI(d) {
   setText('accel-y', d.accel_y != null ? Number(d.accel_y).toFixed(3) : '--');
   setText('accel-z', d.accel_z != null ? Number(d.accel_z).toFixed(3) : '--');
 
-  // 陀螺仪
-  setText('gyro-x', d.gyro_x != null ? Number(d.gyro_x).toFixed(1) : '--');
-  setText('gyro-y', d.gyro_y != null ? Number(d.gyro_y).toFixed(1) : '--');
-  setText('gyro-z', d.gyro_z != null ? Number(d.gyro_z).toFixed(1) : '--');
-  setText('finger-status', d.finger_detected ? '已检测' : '未检测');
-
   // GPS
   if (d.gps_valid && d.latitude && d.longitude) {
     setText('loc-lat', Number(d.latitude).toFixed(6));
@@ -664,11 +790,19 @@ function updateUI(d) {
     setColor('loc-status', 'var(--success)');
     setText('loc-time', d.update_time || '--');
 
-    var latlng = [d.latitude, d.longitude];
-    if (fullMarker) fullMarker.setLatLng(latlng);
-    trackPoints.push(latlng);
-    if (trackLine) trackLine.setLatLngs(trackPoints);
-    if (fullMap && trackPoints.length <= 1) fullMap.setView(latlng, 16);
+    // WGS84(GPS) → GCJ-02(高德) 坐标转换
+    var gcj = wgs84ToGcj02(d.latitude, d.longitude);
+    var amapPos = [gcj[1], gcj[0]]; // 高德用 [lng, lat]
+    if (fullMarker) fullMarker.setPosition(amapPos);
+    trackPoints.push(amapPos);
+    if (trackLine) trackLine.setPath(trackPoints.slice());
+    if (fullMap && trackPoints.length <= 1) fullMap.setCenter(amapPos);
+
+    // 逆地理编码用原始WGS84坐标 + s=r6
+    fetchAmapLocation(d.latitude, d.longitude);
+
+    // 和风天气（用WGS84坐标）
+    fetchQWeather(d.latitude, d.longitude);
   } else {
     setText('loc-status', '未定位');
     setColor('loc-status', 'var(--text3)');
