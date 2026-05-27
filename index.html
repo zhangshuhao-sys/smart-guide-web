@@ -130,7 +130,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 @media(max-width:768px){
   .sidebar{width:56px}.sidebar-header h2,.sidebar-header .sub,.nav-item span:not(.nav-icon){display:none}
   .sidebar-header{padding:12px 0;text-align:center}.nav-item{justify-content:center;padding:12px 0}
-  .main{margin-left:56px}.sensor-grid-4{grid-template-columns:repeat(2,1fr)}.dash-row{grid-template-columns:1fr}.dash-row-4{grid-template-columns:1fr}.loc-btns{grid-template-columns:repeat(2,1fr)}.dash-row-1 .dash-section{max-width:100%}
+  .main{margin-left:56px}.sensor-grid-4{grid-template-columns:repeat(2,1fr)}.dash-row{grid-template-columns:1fr}.dash-row-4{grid-template-columns:1fr}.dash-row-alert .dash-section{max-width:100%}.loc-btns{grid-template-columns:repeat(2,1fr)}.dash-row-1 .dash-section{max-width:100%}
   .content{padding:14px 12px}.card-value{font-size:22px}.card-icon{font-size:22px}
   .cam-grid{grid-template-columns:1fr}.cam-preview{height:220px}
 }
@@ -175,6 +175,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 .dash-row-1{margin-top:14px}
 .dash-row-1 .dash-section{max-width:50%}
 .dash-row-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.dash-row-alert .dash-section{max-width:33%}
 .login-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#1d1d2b 0%,#2d1b69 100%);display:flex;align-items:center;justify-content:center;z-index:9999}
 .login-box{background:#fff;border-radius:16px;padding:40px 36px;width:360px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
 .login-box h2{text-align:center;font-size:22px;font-weight:700;margin-bottom:6px;color:var(--text)}
@@ -318,8 +319,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
     <div class="sensor-card" id="card-humi"><div class="card-icon">&#128167;</div><div class="card-label">湿度</div><div class="card-value" id="val-humi">--</div><div class="card-sub">%</div></div>
     <div class="sensor-card" id="card-presence"><div class="card-icon">&#128101;</div><div class="card-label">人体感应</div><div class="card-value" id="val-presence">--</div><div class="card-sub">LD2410B</div></div>
   </div>
-  <!-- 第3行：实时位置 运动状态 天气 最近报警（4列） -->
-  <div class="dash-row dash-row-4">
+  <!-- 第3行：实时位置 天气 运动状态（3列） -->
+  <div class="dash-row">
     <div class="dash-section">
       <h3>&#128205; 实时位置</h3>
       <div class="loc-info">
@@ -328,16 +329,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
         <div class="row"><span class="lbl">纬度</span><span class="val" id="loc-lat">--</span></div>
         <div class="row"><span class="lbl">经度</span><span class="val" id="loc-lng">--</span></div>
         <div class="row"><span class="lbl">更新时间</span><span class="val" id="loc-time">--</span></div>
-      </div>
-    </div>
-    <div class="dash-section">
-      <h3>&#128208; 运动状态</h3>
-      <div class="loc-info">
-        <div class="row"><span class="lbl">状态</span><span class="val" id="motion-status">--</span></div>
-        <div class="row"><span class="lbl">晃动</span><span class="val" id="motion-shake">--</span></div>
-        <div class="row"><span class="lbl">加速度X</span><span class="val" id="accel-x">--</span></div>
-        <div class="row"><span class="lbl">加速度Y</span><span class="val" id="accel-y">--</span></div>
-        <div class="row"><span class="lbl">加速度Z</span><span class="val" id="accel-z">--</span></div>
       </div>
     </div>
     <div class="dash-section">
@@ -350,6 +341,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
         <div class="row"><span class="lbl">更新</span><span class="val" id="weather-time">--</span></div>
       </div>
     </div>
+    <div class="dash-section">
+      <h3>&#128208; 运动状态</h3>
+      <div class="loc-info">
+        <div class="row"><span class="lbl">状态</span><span class="val" id="motion-status">--</span></div>
+        <div class="row"><span class="lbl">晃动</span><span class="val" id="motion-shake">--</span></div>
+        <div class="row"><span class="lbl">加速度X</span><span class="val" id="accel-x">--</span></div>
+        <div class="row"><span class="lbl">加速度Y</span><span class="val" id="accel-y">--</span></div>
+        <div class="row"><span class="lbl">加速度Z</span><span class="val" id="accel-z">--</span></div>
+      </div>
+    </div>
+  </div>
+  <!-- 第4行：最近报警（与实时位置上下对齐） -->
+  <div class="dash-row dash-row-alert">
     <div class="dash-section">
       <h3>&#128276; 最近报警</h3>
       <div id="dashAlertList" class="dash-alert-list"><div class="alert-empty">暂无报警</div></div>
