@@ -518,7 +518,7 @@ function fetchQWeather(lat, lng) {
     console.log('[QW] weather response:', JSON.stringify(data));
     if (data.code === '200' && data.now) {
       var w = data.now;
-      setText('weather-desc', qweatherCodeToText(w.text || w.icon));
+      setText('weather-desc', w.text || qweatherCodeToText(w.icon));
       setText('weather-temp', w.temp ? w.temp + '°C' : '--');
       setText('weather-wind', (w.windDir || '') + ' ' + (w.windScale || '') + '级');
       setText('weather-humi', w.humidity ? w.humidity + '%' : '--');
