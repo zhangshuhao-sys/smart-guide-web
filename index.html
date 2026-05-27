@@ -81,6 +81,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 .alert-clear-btn:hover{border-color:var(--danger);color:var(--danger)}
 .alert-badge{background:var(--danger);color:#fff;font-size:10px;border-radius:10px;padding:1px 6px;margin-left:4px;font-weight:700}
 @media(max-width:768px){.alerts-layout{grid-template-columns:1fr}}
+/* 报警统计卡片 */
+.alert-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.alert-stat-card{background:var(--card);border-radius:14px;padding:18px;text-align:center;box-shadow:var(--shadow);border-left:4px solid #d9d9d9}
+.stat-total{border-left-color:var(--primary)}.stat-danger{border-left-color:var(--danger)}.stat-warn{border-left-color:var(--warning)}.stat-today{border-left-color:var(--success)}
+.stat-num{font-size:28px;font-weight:700;color:var(--text)}
+.stat-label{font-size:12px;color:var(--text3);margin-top:4px}
+/* 阈值分组 */
+.threshold-group{margin-bottom:12px}
+.threshold-group-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;padding-bottom:4px;border-bottom:2px solid var(--bg)}
+.threshold-reset-btn{width:100%;padding:8px;margin-top:12px;border:1.5px dashed #d9d9d9;border-radius:8px;font-size:12px;background:#fff;color:var(--text3);cursor:pointer;transition:all 0.2s}
+.threshold-reset-btn:hover{border-color:var(--primary);color:var(--primary)}
+/* 报警条目卡片化 */
+.alert-item{display:flex;align-items:flex-start;gap:10px;padding:12px;margin-bottom:8px;border-radius:10px;border:none;font-size:12px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.alert-item:last-child{margin-bottom:0}
+.alert-item .alert-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.alert-item.warn .alert-icon{background:#fff7e6;color:#faad14}
+.alert-item.danger .alert-icon{background:#fff1f0;color:#ff4d4f}
+@media(max-width:768px){.alert-stats{grid-template-columns:repeat(2,1fr)}}
 .loc-btns{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
 .loc-btn{padding:12px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;color:#fff;transition:opacity 0.2s}
 .loc-btn:active{opacity:0.8}
@@ -98,6 +116,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 .info-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f5f5f5;font-size:13px}
 .info-row:last-child{border-bottom:none}
 .info-row .key{color:var(--text3)}.info-row .val{font-weight:600;font-variant-numeric:tabular-nums}
+/* 个人中心布局 */
+.profile-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.setting-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f5f5f5}
+.setting-row:last-child{border-bottom:none}
+.setting-row label{font-size:12px;color:var(--text2)}
+.setting-row select{padding:4px 8px;border:1.5px solid #d9d9d9;border-radius:6px;font-size:12px;outline:none;background:#fff}
+.setting-row select:focus{border-color:var(--primary)}
+@media(max-width:768px){.profile-cards{grid-template-columns:1fr}}
 @media(max-width:768px){
   .sidebar{width:56px}.sidebar-header h2,.sidebar-header .sub,.nav-item span:not(.nav-icon){display:none}
   .sidebar-header{padding:12px 0;text-align:center}.nav-item{justify-content:center;padding:12px 0}
@@ -316,25 +342,45 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 
 <!-- 报警中心 -->
 <div class="tab-panel" id="panel-alerts">
+  <!-- 报警统计 -->
+  <div class="alert-stats">
+    <div class="alert-stat-card stat-total"><div class="stat-num" id="statTotal">0</div><div class="stat-label">总报警</div></div>
+    <div class="alert-stat-card stat-danger"><div class="stat-num" id="statDanger">0</div><div class="stat-label">危险</div></div>
+    <div class="alert-stat-card stat-warn"><div class="stat-num" id="statWarn">0</div><div class="stat-label">警告</div></div>
+    <div class="alert-stat-card stat-today"><div class="stat-num" id="statToday">0</div><div class="stat-label">今日</div></div>
+  </div>
   <div class="alerts-layout">
     <div class="alerts-left">
       <div class="alert-card">
         <h3>&#9881; 阈值设置</h3>
-        <div class="threshold-row"><label>温度上限 (°C)</label><input type="number" id="th-temp-max" value="40" onchange="saveThresholds()"></div>
-        <div class="threshold-row"><label>温度下限 (°C)</label><input type="number" id="th-temp-min" value="10" onchange="saveThresholds()"></div>
-        <div class="threshold-row"><label>湿度上限 (%)</label><input type="number" id="th-humi-max" value="80" onchange="saveThresholds()"></div>
-        <div class="threshold-row"><label>湿度下限 (%)</label><input type="number" id="th-humi-min" value="20" onchange="saveThresholds()"></div>
-        <div class="threshold-row"><label>烟雾上限 (ADC)</label><input type="number" id="th-smoke-max" value="500" onchange="saveThresholds()"></div>
-        <div class="threshold-row"><label>心率上限 (BPM)</label><input type="number" id="th-hr-max" value="120" onchange="saveThresholds()"></div>
-        <div class="threshold-row"><label>心率下限 (BPM)</label><input type="number" id="th-hr-min" value="50" onchange="saveThresholds()"></div>
-        <div class="threshold-row"><label>血氧下限 (%)</label><input type="number" id="th-spo2-min" value="90" onchange="saveThresholds()"></div>
+        <div class="threshold-group">
+          <div class="threshold-group-title">温度</div>
+          <div class="threshold-row"><label>上限 (°C)</label><input type="number" id="th-temp-max" value="40" onchange="saveThresholds()"></div>
+          <div class="threshold-row"><label>下限 (°C)</label><input type="number" id="th-temp-min" value="10" onchange="saveThresholds()"></div>
+        </div>
+        <div class="threshold-group">
+          <div class="threshold-group-title">湿度</div>
+          <div class="threshold-row"><label>上限 (%)</label><input type="number" id="th-humi-max" value="80" onchange="saveThresholds()"></div>
+          <div class="threshold-row"><label>下限 (%)</label><input type="number" id="th-humi-min" value="20" onchange="saveThresholds()"></div>
+        </div>
+        <div class="threshold-group">
+          <div class="threshold-group-title">安全</div>
+          <div class="threshold-row"><label>烟雾上限 (ADC)</label><input type="number" id="th-smoke-max" value="500" onchange="saveThresholds()"></div>
+        </div>
+        <div class="threshold-group">
+          <div class="threshold-group-title">健康</div>
+          <div class="threshold-row"><label>心率上限 (BPM)</label><input type="number" id="th-hr-max" value="120" onchange="saveThresholds()"></div>
+          <div class="threshold-row"><label>心率下限 (BPM)</label><input type="number" id="th-hr-min" value="50" onchange="saveThresholds()"></div>
+          <div class="threshold-row"><label>血氧下限 (%)</label><input type="number" id="th-spo2-min" value="90" onchange="saveThresholds()"></div>
+        </div>
+        <button class="threshold-reset-btn" onclick="resetThresholds()">恢复默认值</button>
       </div>
     </div>
     <div class="alerts-right">
       <div class="alert-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <h3>&#128276; 最近警告</h3>
-          <button class="alert-clear-btn" onclick="clearAlerts()">清除</button>
+          <button class="alert-clear-btn" onclick="clearAlerts()">清除全部</button>
         </div>
         <div id="alertList" class="alert-list">
           <div class="alert-empty">暂无警告</div>
@@ -380,17 +426,61 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <!-- 个人中心 -->
 <div class="tab-panel" id="panel-profile">
   <div class="profile-header">
-    <div class="profile-avatar">S</div>
-    <div class="profile-name">智能导盲系统</div>
-    <div class="profile-role">ESP32-P4 Monitor</div>
+    <div class="profile-avatar" id="profAvatar">S</div>
+    <div class="profile-name" id="profName">智能导盲系统</div>
+    <div class="profile-role">ESP32-P4 云端监控</div>
   </div>
-  <div class="info-card">
-    <h3>&#128187; 系统信息</h3>
-    <div class="info-row"><span class="key">数据来源</span><span class="val">华为云IoTDA</span></div>
-    <div class="info-row"><span class="key">更新间隔</span><span class="val">3秒</span></div>
-    <div class="info-row"><span class="key">最后更新</span><span class="val" id="prof-last">--</span></div>
-    <div class="info-row"><span class="key">数据条数</span><span class="val" id="prof-count">0</span></div>
-    <div class="info-row"><span class="key">版本</span><span class="val">v1.0.0</span></div>
+  <div class="profile-cards">
+    <div class="info-card">
+      <h3>&#128100; 用户信息</h3>
+      <div class="info-row"><span class="key">账号</span><span class="val" id="profUser">--</span></div>
+      <div class="info-row"><span class="key">登录时间</span><span class="val" id="profLoginTime">--</span></div>
+      <div class="info-row"><span class="key">在线时长</span><span class="val" id="profOnline">--</span></div>
+    </div>
+    <div class="info-card">
+      <h3>&#128187; 设备状态</h3>
+      <div class="info-row"><span class="key">设备状态</span><span class="val" id="profDevice">--</span></div>
+      <div class="info-row"><span class="key">GPS 位置</span><span class="val" id="profGps">--</span></div>
+      <div class="info-row"><span class="key">当前天气</span><span class="val" id="profWeather">--</span></div>
+      <div class="info-row"><span class="key">温度 / 湿度</span><span class="val" id="profTempHumi">--</span></div>
+      <div class="info-row"><span class="key">烟雾浓度</span><span class="val" id="profSmoke">--</span></div>
+    </div>
+    <div class="info-card">
+      <h3>&#128295; 系统信息</h3>
+      <div class="info-row"><span class="key">数据来源</span><span class="val">华为云IoTDA + OBS</span></div>
+      <div class="info-row"><span class="key">更新间隔</span><span class="val" id="profInterval">3秒</span></div>
+      <div class="info-row"><span class="key">最后更新</span><span class="val" id="prof-last">--</span></div>
+      <div class="info-row"><span class="key">接收数据</span><span class="val" id="prof-count">0 条</span></div>
+      <div class="info-row"><span class="key">版本</span><span class="val">v1.2.0</span></div>
+    </div>
+    <div class="info-card">
+      <h3>&#9881; 系统设置</h3>
+      <div class="setting-row">
+        <label>数据轮询间隔</label>
+        <select id="setInterval" onchange="changeInterval()">
+          <option value="2">2秒</option>
+          <option value="3" selected>3秒</option>
+          <option value="5">5秒</option>
+          <option value="10">10秒</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <label>离线超时</label>
+        <select id="setOfflineTimeout" onchange="changeOfflineTimeout()">
+          <option value="5000">5秒</option>
+          <option value="10000">10秒</option>
+          <option value="30000" selected>30秒</option>
+          <option value="60000">60秒</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <label>地图类型</label>
+        <select id="setMapType" onchange="changeMapType()">
+          <option value="normal">标准地图</option>
+          <option value="satellite">卫星地图</option>
+        </select>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -669,18 +759,40 @@ function addAlert(level, msg) {
 function renderAlerts() {
   var el = document.getElementById('alertList');
   if (!el) return;
-  if (alerts.length === 0) { el.innerHTML = '<div class="alert-empty">暂无警告</div>'; return; }
+  if (alerts.length === 0) { el.innerHTML = '<div class="alert-empty">暂无警告</div>'; updateAlertStats(); return; }
   var html = '';
   for (var i = 0; i < alerts.length; i++) {
-    html += '<div class="alert-item"><div class="alert-dot ' + alerts[i].level + '"></div><div class="alert-msg">' + alerts[i].msg + '</div><div class="alert-time">' + alerts[i].time + '</div></div>';
+    var icon = alerts[i].level === 'danger' ? '&#9888;' : '&#9888;';
+    html += '<div class="alert-item ' + alerts[i].level + '"><div class="alert-icon">' + icon + '</div><div style="flex:1"><div class="alert-msg">' + alerts[i].msg + '</div><div class="alert-time">' + alerts[i].time + '</div></div></div>';
   }
   el.innerHTML = html;
+  updateAlertStats();
+}
+
+function updateAlertStats() {
+  var dangerCount = 0, warnCount = 0, todayCount = 0;
+  var today = new Date().toISOString().slice(0, 10);
+  for (var i = 0; i < alerts.length; i++) {
+    if (alerts[i].level === 'danger') dangerCount++;
+    if (alerts[i].level === 'warn') warnCount++;
+  }
+  setText('statTotal', alerts.length);
+  setText('statDanger', dangerCount);
+  setText('statWarn', warnCount);
+  setText('statToday', todayCount);
 }
 
 function clearAlerts() {
   alerts = [];
   localStorage.setItem('sg_alerts', JSON.stringify(alerts));
   renderAlerts();
+}
+
+function resetThresholds() {
+  thresholds = {};
+  for (var k in DEFAULT_THRESHOLDS) thresholds[k] = DEFAULT_THRESHOLDS[k];
+  localStorage.setItem('sg_thresholds', JSON.stringify(thresholds));
+  for (var k in thresholds) { var el = document.getElementById('th-' + k); if (el) el.value = thresholds[k]; }
 }
 
 function checkThresholds(d) {
@@ -909,6 +1021,7 @@ function updateUI(d) {
   }
   updateChartDisplay();
   updateSafetyScore(d);
+  updateProfileStatus(d);
   checkThresholds(d);
 }
 
@@ -952,6 +1065,7 @@ function doRegister() {
   users[u] = p;
   saveUsers(users);
   localStorage.setItem('sg_logged_in', '1');
+  localStorage.setItem('sg_user', u);
   document.getElementById('loginOverlay').style.display = 'none';
   startApp();
 }
@@ -962,6 +1076,7 @@ function doLogin() {
   var users = getUsers();
   if (users[u] && users[u] === p) {
     localStorage.setItem('sg_logged_in', '1');
+    localStorage.setItem('sg_user', u);
     document.getElementById('loginOverlay').style.display = 'none';
     document.getElementById('loginErr').textContent = '';
     startApp();
@@ -972,16 +1087,71 @@ function doLogin() {
 
 function doLogout() {
   localStorage.removeItem('sg_logged_in');
+  localStorage.removeItem('sg_user');
   location.reload();
+}
+
+/* 设置 */
+var pollInterval = 3;
+var pollTimer = null;
+function changeInterval() {
+  pollInterval = Number(document.getElementById('setInterval').value);
+  setText('profInterval', pollInterval + '秒');
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(fetchData, pollInterval * 1000);
+}
+function changeOfflineTimeout() {
+  DEVICE_OFFLINE_TIMEOUT = Number(document.getElementById('setOfflineTimeout').value);
+}
+function changeMapType() {
+  if (!fullMap) return;
+  var type = document.getElementById('setMapType').value;
+  fullMap.setMapType(type === 'satellite' ? 'satellite' : 'normal');
+}
+
+/* 个人中心 */
+var appStartTime = Date.now();
+var loginUser = '';
+function initProfile() {
+  loginUser = localStorage.getItem('sg_user') || 'admin';
+  setText('profUser', loginUser);
+  setText('profAvatar', loginUser.charAt(0).toUpperCase());
+  var t = new Date();
+  setText('profLoginTime', t.getFullYear() + '-' + String(t.getMonth()+1).padStart(2,'0') + '-' + String(t.getDate()).padStart(2,'0') + ' ' + String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0'));
+}
+function updateProfileStatus(d) {
+  setText('profDevice', deviceOnline ? '在线' : '离线');
+  setText('prof-last', d.update_time || '--');
+  setText('prof-count', msgCount + ' 条');
+  // 在线时长
+  var elapsed = Math.floor((Date.now() - appStartTime) / 1000);
+  var h = Math.floor(elapsed / 3600);
+  var m = Math.floor((elapsed % 3600) / 60);
+  setText('profOnline', h > 0 ? h + '小时' + m + '分钟' : m + '分钟');
+  // GPS
+  if (d.gps_valid && d.latitude && d.longitude) {
+    setText('profGps', Number(d.latitude).toFixed(4) + ', ' + Number(d.longitude).toFixed(4));
+  } else {
+    setText('profGps', '未定位');
+  }
+  // 温湿度
+  setText('profTempHumi', (d.temperature != null ? Number(d.temperature).toFixed(1) + '°C' : '--') + ' / ' + (d.humidity != null ? Number(d.humidity).toFixed(1) + '%' : '--'));
+  // 烟雾
+  setText('profSmoke', d.raw_smoke != null ? d.raw_smoke + ' ADC' : '--');
+  // 天气
+  var wDesc = document.getElementById('weather-desc') ? document.getElementById('weather-desc').textContent : '--';
+  var wTemp = document.getElementById('weather-temp') ? document.getElementById('weather-temp').textContent : '--';
+  setText('profWeather', wDesc !== '--' && wDesc !== '查询中...' ? wDesc + ' ' + wTemp : '--');
 }
 
 function startApp() {
   initMap();
   initCharts();
   loadThresholds();
+  initProfile();
   setDeviceOnline(false);
   fetchData();
-  setInterval(fetchData, 3000);
+  pollTimer = setInterval(fetchData, pollInterval * 1000);
 }
 
 // 回车键
