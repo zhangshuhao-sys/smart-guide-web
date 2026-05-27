@@ -34,7 +34,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 .topbar .status.offline{color:var(--danger)}
 .content{flex:1;padding:20px 32px;max-width:1100px;margin:0 auto;width:100%}
 .tab-panel{display:none}.tab-panel.active{display:block}
-.sensor-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+.sensor-grid{display:grid;gap:14px;margin-bottom:14px}
+.sensor-grid-4{grid-template-columns:repeat(4,1fr)}
+.sensor-grid-2{grid-template-columns:repeat(2,1fr)}
+.sensor-card{background:var(--card);border-radius:12px;padding:14px 12px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:transform 0.15s,box-shadow 0.15s,opacity 0.3s;text-align:center}
 .sensor-card{background:var(--card);border-radius:14px;padding:20px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:transform 0.15s,box-shadow 0.15s,opacity 0.3s;text-align:center}
 .sensor-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,0.1)}
 .sensor-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--success);transition:background 0.3s}
@@ -43,7 +46,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 .sensor-card.offline{opacity:0.4;pointer-events:none}
 .sensor-card.offline::before{background:var(--text3)}
 .card-label{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
-.card-value{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
+.card-value{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
 .card-sub{font-size:11px;color:var(--text3);margin-top:4px}
 .dash-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .dash-section{background:var(--card);border-radius:14px;padding:18px;box-shadow:var(--shadow)}
@@ -127,7 +130,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 @media(max-width:768px){
   .sidebar{width:56px}.sidebar-header h2,.sidebar-header .sub,.nav-item span:not(.nav-icon){display:none}
   .sidebar-header{padding:12px 0;text-align:center}.nav-item{justify-content:center;padding:12px 0}
-  .main{margin-left:56px}.sensor-grid{grid-template-columns:repeat(2,1fr)}.dash-row{grid-template-columns:1fr}.loc-btns{grid-template-columns:repeat(2,1fr)}
+  .main{margin-left:56px}.sensor-grid-4{grid-template-columns:repeat(2,1fr)}.sensor-grid-2{grid-template-columns:1fr}.dash-row{grid-template-columns:1fr}.loc-btns{grid-template-columns:repeat(2,1fr)}.dash-row-1 .dash-section{max-width:100%}
   .content{padding:14px 12px}.card-value{font-size:22px}.card-icon{font-size:22px}
   .cam-grid{grid-template-columns:1fr}.cam-preview{height:220px}
 }
@@ -156,6 +159,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 #card-spo2 .card-icon{background:linear-gradient(135deg,#e6fffb,#b5f5ec)}
 #card-presence .card-icon{background:linear-gradient(135deg,#f6ffed,#d9f7be)}
 @media(max-width:768px){.safety-card{gap:16px;padding:16px}.safety-details{gap:8px 14px}}
+/* 超阈值警告横幅 */
+.alert-banner{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;margin-bottom:14px;border-radius:12px;background:linear-gradient(135deg,#fff1f0,#ffa39e);border:1px solid #ffccc7;animation:bannerSlide 0.3s ease}
+.alert-banner-content{font-size:13px;font-weight:600;color:#cf1322;flex:1}
+.alert-banner-close{border:none;background:none;font-size:20px;color:#cf1322;cursor:pointer;padding:0 4px;line-height:1}
+@keyframes bannerSlide{from{transform:translateY(-10px);opacity:0}to{transform:translateY(0);opacity:1}}
+/* 仪表盘报警列表 */
+.dash-alert-list{max-height:200px;overflow-y:auto;font-size:12px}
+.dash-alert-item{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid #f5f5f5}
+.dash-alert-item:last-child{border-bottom:none}
+.dash-alert-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.dash-alert-dot.danger{background:var(--danger)}.dash-alert-dot.warn{background:var(--warning)}
+.dash-alert-msg{flex:1;color:var(--text2)}
+.dash-alert-time{color:var(--text3);font-size:11px}
+.dash-row-1{margin-top:14px}
+.dash-row-1 .dash-section{max-width:50%}
 .login-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#1d1d2b 0%,#2d1b69 100%);display:flex;align-items:center;justify-content:center;z-index:9999}
 .login-box{background:#fff;border-radius:16px;padding:40px 36px;width:360px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
 .login-box h2{text-align:center;font-size:22px;font-weight:700;margin-bottom:6px;color:var(--text)}
@@ -261,7 +279,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <div class="content">
 <!-- 仪表盘 -->
 <div class="tab-panel active" id="panel-dashboard">
+  <!-- 超阈值警告横幅 -->
+  <div class="alert-banner" id="alertBanner" style="display:none">
+    <div class="alert-banner-content" id="alertBannerContent">&#9888; 警告</div>
+    <button class="alert-banner-close" onclick="dismissAlertBanner()">&times;</button>
+  </div>
   <div class="offline-banner" id="offlineBanner"><span class="offline-icon">&#9888;</span>设备不在线 - 等待连接...</div>
+  <!-- 健康评分 -->
   <div class="safety-card">
     <div class="safety-ring-wrap">
       <svg class="safety-ring" viewBox="0 0 120 120">
@@ -269,45 +293,40 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
         <circle class="ring-fill" cx="60" cy="60" r="52" id="safetyRing"/>
       </svg>
       <div class="safety-score" id="safetyScore">--</div>
-      <div class="safety-label">安全评分</div>
+      <div class="safety-label">健康评分</div>
     </div>
     <div class="safety-details" id="safetyDetails">
-      <div class="safety-item off"><span class="dot"></span>温度</div>
-      <div class="safety-item off"><span class="dot"></span>湿度</div>
-      <div class="safety-item off"><span class="dot"></span>烟雾</div>
       <div class="safety-item off"><span class="dot"></span>心率</div>
       <div class="safety-item off"><span class="dot"></span>血氧</div>
+      <div class="safety-item off"><span class="dot"></span>烟雾</div>
+      <div class="safety-item off"><span class="dot"></span>温度</div>
+      <div class="safety-item off"><span class="dot"></span>湿度</div>
       <div class="safety-item off"><span class="dot"></span>环境</div>
     </div>
     <div class="safety-summary" id="safetySummary">等待数据</div>
   </div>
-  <div class="sensor-grid">
-    <div class="sensor-card" id="card-temp"><div class="card-icon">&#127777;&#65039;</div><div class="card-label">温度</div><div class="card-value" id="val-temp">--</div><div class="card-sub">°C</div></div>
-    <div class="sensor-card" id="card-humi"><div class="card-icon">&#128167;</div><div class="card-label">湿度</div><div class="card-value" id="val-humi">--</div><div class="card-sub">%</div></div>
-    <div class="sensor-card" id="card-gas"><div class="card-icon">&#128293;</div><div class="card-label">烟雾</div><div class="card-value" id="val-gas">--</div><div class="card-sub">ADC</div></div>
+  <!-- 第1行：心率 血氧 烟雾 温度（4列） -->
+  <div class="sensor-grid sensor-grid-4">
     <div class="sensor-card" id="card-hr"><div class="card-icon">&#10084;&#65039;</div><div class="card-label">心率</div><div class="card-value" id="val-hr">--</div><div class="card-sub">BPM</div></div>
     <div class="sensor-card" id="card-spo2"><div class="card-icon">&#129658;</div><div class="card-label">血氧</div><div class="card-value" id="val-spo2">--</div><div class="card-sub">%</div></div>
+    <div class="sensor-card" id="card-gas"><div class="card-icon">&#128293;</div><div class="card-label">烟雾</div><div class="card-value" id="val-gas">--</div><div class="card-sub">ADC</div></div>
+    <div class="sensor-card" id="card-temp"><div class="card-icon">&#127777;&#65039;</div><div class="card-label">温度</div><div class="card-value" id="val-temp">--</div><div class="card-sub">°C</div></div>
+  </div>
+  <!-- 第2行：湿度 人体感应（2列，卡片较宽） -->
+  <div class="sensor-grid sensor-grid-2">
+    <div class="sensor-card" id="card-humi"><div class="card-icon">&#128167;</div><div class="card-label">湿度</div><div class="card-value" id="val-humi">--</div><div class="card-sub">%</div></div>
     <div class="sensor-card" id="card-presence"><div class="card-icon">&#128101;</div><div class="card-label">人体感应</div><div class="card-value" id="val-presence">--</div><div class="card-sub">LD2410B</div></div>
   </div>
+  <!-- 第3行：实时位置 天气 最近报警（3列） -->
   <div class="dash-row">
     <div class="dash-section">
-      <h3>&#128506; GPS 位置</h3>
+      <h3>&#128205; 实时位置</h3>
       <div class="loc-info">
         <div class="row"><span class="lbl">纬度</span><span class="val" id="loc-lat">--</span></div>
         <div class="row"><span class="lbl">经度</span><span class="val" id="loc-lng">--</span></div>
         <div class="row"><span class="lbl">位置</span><span class="val" id="loc-addr">--</span></div>
         <div class="row"><span class="lbl">状态</span><span class="val" id="loc-status">未定位</span></div>
         <div class="row"><span class="lbl">更新时间</span><span class="val" id="loc-time">--</span></div>
-      </div>
-    </div>
-    <div class="dash-section">
-      <h3>&#128208; 运动状态</h3>
-      <div class="loc-info">
-        <div class="row"><span class="lbl">状态</span><span class="val" id="motion-status">--</span></div>
-        <div class="row"><span class="lbl">晃动</span><span class="val" id="motion-shake">--</span></div>
-        <div class="row"><span class="lbl">加速度X</span><span class="val" id="accel-x">--</span></div>
-        <div class="row"><span class="lbl">加速度Y</span><span class="val" id="accel-y">--</span></div>
-        <div class="row"><span class="lbl">加速度Z</span><span class="val" id="accel-z">--</span></div>
       </div>
     </div>
     <div class="dash-section">
@@ -318,6 +337,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
         <div class="row"><span class="lbl">风向风力</span><span class="val" id="weather-wind">--</span></div>
         <div class="row"><span class="lbl">湿度</span><span class="val" id="weather-humi">--</span></div>
         <div class="row"><span class="lbl">更新</span><span class="val" id="weather-time">--</span></div>
+      </div>
+    </div>
+    <div class="dash-section">
+      <h3>&#128276; 最近报警</h3>
+      <div id="dashAlertList" class="dash-alert-list"><div class="alert-empty">暂无报警</div></div>
+    </div>
+  </div>
+  <!-- 第4行：运动状态 -->
+  <div class="dash-row dash-row-1">
+    <div class="dash-section">
+      <h3>&#128208; 运动状态</h3>
+      <div class="loc-info">
+        <div class="row"><span class="lbl">状态</span><span class="val" id="motion-status">--</span></div>
+        <div class="row"><span class="lbl">晃动</span><span class="val" id="motion-shake">--</span></div>
+        <div class="row"><span class="lbl">加速度X</span><span class="val" id="accel-x">--</span></div>
+        <div class="row"><span class="lbl">加速度Y</span><span class="val" id="accel-y">--</span></div>
+        <div class="row"><span class="lbl">加速度Z</span><span class="val" id="accel-z">--</span></div>
       </div>
     </div>
   </div>
@@ -755,12 +791,19 @@ function addAlert(level, msg) {
   if (alerts.length > MAX_ALERTS) alerts.length = MAX_ALERTS;
   localStorage.setItem('sg_alerts', JSON.stringify(alerts));
   renderAlerts();
+  // 超阈值弹出警告横幅
+  if (level === 'danger') {
+    var banner = document.getElementById('alertBanner');
+    var bannerContent = document.getElementById('alertBannerContent');
+    bannerContent.innerHTML = '&#9888; ' + msg;
+    banner.style.display = 'flex';
+  }
 }
 
 function renderAlerts() {
   var el = document.getElementById('alertList');
   if (!el) return;
-  if (alerts.length === 0) { el.innerHTML = '<div class="alert-empty">暂无警告</div>'; updateAlertStats(); return; }
+  if (alerts.length === 0) { el.innerHTML = '<div class="alert-empty">暂无警告</div>'; updateAlertStats(); renderDashAlerts(); return; }
   var html = '';
   for (var i = 0; i < alerts.length; i++) {
     var icon = alerts[i].level === 'danger' ? '&#9888;' : '&#9888;';
@@ -768,6 +811,23 @@ function renderAlerts() {
   }
   el.innerHTML = html;
   updateAlertStats();
+  renderDashAlerts();
+}
+
+function renderDashAlerts() {
+  var el = document.getElementById('dashAlertList');
+  if (!el) return;
+  if (alerts.length === 0) { el.innerHTML = '<div class="alert-empty">暂无报警</div>'; return; }
+  var html = '';
+  var count = Math.min(alerts.length, 5);
+  for (var i = 0; i < count; i++) {
+    html += '<div class="dash-alert-item"><div class="dash-alert-dot ' + alerts[i].level + '"></div><div class="dash-alert-msg">' + alerts[i].msg + '</div><div class="dash-alert-time">' + alerts[i].time + '</div></div>';
+  }
+  el.innerHTML = html;
+}
+
+function dismissAlertBanner() {
+  document.getElementById('alertBanner').style.display = 'none';
 }
 
 function updateAlertStats() {
@@ -828,28 +888,28 @@ function updateSafetyScore(d) {
   var score = 100;
   var issues = [];
   var items = document.querySelectorAll('#safetyDetails .safety-item');
-  // 温度
-  if (d.temperature > 45) { score -= 30; setItem(items[0], 'danger'); issues.push('温度过高'); }
-  else if (d.temperature > 35 || d.temperature < 10) { score -= 10; setItem(items[0], 'warning'); issues.push('温度异常'); }
-  else { setItem(items[0], 'ok'); }
-  // 湿度
-  if (d.humidity > 80 || d.humidity < 20) { score -= 10; setItem(items[1], 'warning'); issues.push('湿度异常'); }
-  else { setItem(items[1], 'ok'); }
-  // 烟雾
+  // 0:心率
+  if (d.finger_detected) {
+    if (d.heart_rate > 140 || d.heart_rate < 40) { score -= 20; setItem(items[0], 'danger'); issues.push('心率异常'); }
+    else { setItem(items[0], 'ok'); }
+  } else { setItem(items[0], 'off'); }
+  // 1:血氧
+  if (d.finger_detected) {
+    if (d.spO2 < 90) { score -= 20; setItem(items[1], 'danger'); issues.push('血氧过低'); }
+    else { setItem(items[1], 'ok'); }
+  } else { setItem(items[1], 'off'); }
+  // 2:烟雾
   if (d.raw_smoke > 600) { score -= 30; setItem(items[2], 'danger'); issues.push('烟雾浓度过高'); }
   else if (d.raw_smoke > 300) { score -= 10; setItem(items[2], 'warning'); issues.push('烟雾偏高'); }
   else { setItem(items[2], 'ok'); }
-  // 心率
-  if (d.finger_detected) {
-    if (d.heart_rate > 140 || d.heart_rate < 40) { score -= 20; setItem(items[3], 'danger'); issues.push('心率异常'); }
-    else { setItem(items[3], 'ok'); }
-  } else { setItem(items[3], 'off'); }
-  // 血氧
-  if (d.finger_detected) {
-    if (d.spO2 < 90) { score -= 20; setItem(items[4], 'danger'); issues.push('血氧过低'); }
-    else { setItem(items[4], 'ok'); }
-  } else { setItem(items[4], 'off'); }
-  // 人体感应
+  // 3:温度
+  if (d.temperature > 45) { score -= 30; setItem(items[3], 'danger'); issues.push('温度过高'); }
+  else if (d.temperature > 35 || d.temperature < 10) { score -= 10; setItem(items[3], 'warning'); issues.push('温度异常'); }
+  else { setItem(items[3], 'ok'); }
+  // 4:湿度
+  if (d.humidity > 80 || d.humidity < 20) { score -= 10; setItem(items[4], 'warning'); issues.push('湿度异常'); }
+  else { setItem(items[4], 'ok'); }
+  // 5:环境
   if (d.presence) { setItem(items[5], 'ok'); }
   else { setItem(items[5], 'off'); }
 
