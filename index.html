@@ -514,7 +514,7 @@ function fetchQWeather(lat, lng) {
   var loc = Number(lng).toFixed(2) + ',' + Number(lat).toFixed(2);
   var url = 'https://' + QWEATHER_HOST + '/v7/weather/now?location=' + loc + '&key=' + QWEATHER_KEY;
   console.log('[QW] weather URL:', url);
-  amapJsonp(url).then(function(data) {
+  fetch(url).then(function(resp) { return resp.json(); }).then(function(data) {
     console.log('[QW] weather response:', JSON.stringify(data));
     if (data.code === '200' && data.now) {
       var w = data.now;
