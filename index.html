@@ -777,7 +777,7 @@ function updateAlertStats() {
   for (var i = 0; i < alerts.length; i++) {
     if (alerts[i].level === 'danger') dangerCount++;
     if (alerts[i].level === 'warn') warnCount++;
-    if (alerts[i].date === today) todayCount++;
+    if (!alerts[i].date || alerts[i].date === today) todayCount++;
   }
   setText('statTotal', alerts.length);
   setText('statDanger', dangerCount);
