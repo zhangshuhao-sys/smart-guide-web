@@ -1,0 +1,6 @@
+// API 配置（此文件不提交到 Git）
+var AMAP_KEY = '4da0a1c6536c045fd12391b45462389f';
+var AMAP_JS_KEY = '7f5829e17da4002240b670dadbe56f5d';
+var AMAP_SECRET = '45b10c429811fb7bd4e85b398695dd92';
+var QWEATHER_HOST = 'mb7p439dqw.re.qweatherapi.com';
+var QWEATHER_KEY = 'f243548e14984510a5c1a8955927a659';
