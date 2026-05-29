@@ -531,6 +531,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
    ★★★ 配置区 ★★★
    ================================================================ */
 var OBS_BASE = 'https://smart-guide-data.obs.cn-north-4.myhuaweicloud.com';
+var LOCAL_SERVER_BASE = localStorage.getItem('sg_local_server_base') || 'http://192.168.3.237:8000';
 var AMAP_KEY = '4da0a1c6536c045fd12391b45462389f';
 var AMAP_JS_KEY = '7f5829e17da4002240b670dadbe56f5d';
 var QWEATHER_HOST = 'mb7p439dqw.re.qweatherapi.com';
@@ -543,6 +544,7 @@ var msgCount = 0;
 var sensorHistory = { labels:[], temp:[], humi:[], gas:[], hr:[], spo2:[] };
 var MAX_HISTORY = 500;
 var fullMap, fullMarker, trackLine, trackPoints = [];
+var navigationLine = null, navigationMarkers = [], lastNavigationUpdatedAt = '';
 var trackVisible = true, satelliteMode = false;
 var cHr, cEnv, cGas;
 var deviceOnline = false;
@@ -585,13 +587,81 @@ function initMap() {
     strokeWeight: 3,
     strokeOpacity: 0.6
   });
+  navigationLine = new AMap.Polyline({
+    map: fullMap,
+    path: [],
+    strokeColor: '#ff4d4f',
+    strokeWeight: 6,
+    strokeOpacity: 0.85,
+    strokeStyle: 'solid',
+    lineJoin: 'round'
+  });
 }
 function locCenter() { if (trackPoints.length > 0) fullMap.setCenter(trackPoints[trackPoints.length-1], 17); }
 function locToggleTrack() { trackVisible = !trackVisible; if (trackLine) trackLine.setOptions({ strokeOpacity: trackVisible ? 0.6 : 0 }); }
-function locClearTrack() { trackPoints = []; if (trackLine) trackLine.setPath([]); }
+function locClearTrack() {
+  trackPoints = [];
+  if (trackLine) trackLine.setPath([]);
+  clearNavigation();
+}
 function locToggleSatellite() {
   satelliteMode = !satelliteMode;
   fullMap.setMapType(satelliteMode ? 'satellite' : 'normal');
+}
+
+function clearNavigationOverlay() {
+  if (navigationLine) navigationLine.setPath([]);
+  if (fullMap && navigationMarkers.length) {
+    navigationMarkers.forEach(function(marker){ fullMap.remove(marker); });
+  }
+  navigationMarkers = [];
+  lastNavigationUpdatedAt = '';
+}
+
+function drawNavigation(nav) {
+  if (!fullMap || !navigationLine || !nav || !nav.active || !nav.route || !nav.route.polyline) return;
+  if (nav.updated_at && nav.updated_at === lastNavigationUpdatedAt) return;
+
+  var path = nav.route.polyline.map(function(point) {
+    return [Number(point[0]), Number(point[1])];
+  }).filter(function(point) {
+    return isFinite(point[0]) && isFinite(point[1]);
+  });
+  if (path.length < 2) return;
+
+  lastNavigationUpdatedAt = nav.updated_at || String(Date.now());
+  navigationLine.setPath(path);
+
+  if (navigationMarkers.length) {
+    navigationMarkers.forEach(function(marker){ fullMap.remove(marker); });
+    navigationMarkers = [];
+  }
+  navigationMarkers.push(new AMap.Marker({
+    map: fullMap,
+    position: path[0],
+    label: { content: '起点', direction: 'top' }
+  }));
+  navigationMarkers.push(new AMap.Marker({
+    map: fullMap,
+    position: path[path.length - 1],
+    label: { content: nav.destination_text || '终点', direction: 'top' }
+  }));
+  fullMap.setFitView([navigationLine].concat(navigationMarkers), false, [40, 40, 40, 40]);
+}
+
+function fetchNavigation() {
+  fetch(LOCAL_SERVER_BASE + '/navigation/current?t=' + Date.now())
+    .then(function(resp){ return resp.json(); })
+    .then(function(nav) {
+      if (nav && nav.active) drawNavigation(nav);
+      else clearNavigationOverlay();
+    })
+    .catch(function(err){ console.warn('导航路线获取失败', err); });
+}
+
+function clearNavigation() {
+  clearNavigationOverlay();
+  fetch(LOCAL_SERVER_BASE + '/navigation/clear?t=' + Date.now()).catch(function(){});
 }
 
 /* ================================================================
@@ -1159,6 +1229,7 @@ function doLogout() {
 /* 设置 */
 var pollInterval = 3;
 var pollTimer = null;
+var navigationPollTimer = null;
 function changeInterval() {
   pollInterval = Number(document.getElementById('setInterval').value);
   setText('profInterval', pollInterval + '秒');
@@ -1217,6 +1288,9 @@ function startApp() {
   setDeviceOnline(false);
   fetchData();
   pollTimer = setInterval(fetchData, pollInterval * 1000);
+  fetchNavigation();
+  if (navigationPollTimer) clearInterval(navigationPollTimer);
+  navigationPollTimer = setInterval(fetchNavigation, 3000);
 }
 
 // 回车键
