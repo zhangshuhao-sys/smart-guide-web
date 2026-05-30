@@ -597,6 +597,20 @@ function initMap() {
     lineJoin: 'round'
   });
 }
+
+function createNavigationLine() {
+  if (!fullMap) return null;
+  return new AMap.Polyline({
+    map: fullMap,
+    path: [],
+    strokeColor: '#ff4d4f',
+    strokeWeight: 6,
+    strokeOpacity: 0.85,
+    strokeStyle: 'solid',
+    lineJoin: 'round'
+  });
+}
+
 function locCenter() { if (trackPoints.length > 0) fullMap.setCenter(trackPoints[trackPoints.length-1], 17); }
 function locToggleTrack() { trackVisible = !trackVisible; if (trackLine) trackLine.setOptions({ strokeOpacity: trackVisible ? 0.6 : 0 }); }
 function locClearTrack() {
@@ -610,7 +624,11 @@ function locToggleSatellite() {
 }
 
 function clearNavigationOverlay() {
-  if (navigationLine) navigationLine.setPath([]);
+  if (fullMap && navigationLine) {
+    navigationLine.setPath([]);
+    fullMap.remove(navigationLine);
+    navigationLine = createNavigationLine();
+  }
   if (fullMap && navigationMarkers.length) {
     navigationMarkers.forEach(function(marker){ fullMap.remove(marker); });
   }
@@ -661,7 +679,9 @@ function fetchNavigation() {
 
 function clearNavigation() {
   clearNavigationOverlay();
-  fetch(LOCAL_SERVER_BASE + '/navigation/clear?t=' + Date.now()).catch(function(){});
+  fetch(LOCAL_SERVER_BASE + '/navigation/clear?t=' + Date.now())
+    .then(function(){ setTimeout(fetchNavigation, 300); })
+    .catch(function(){});
 }
 
 /* ================================================================
