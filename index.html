@@ -545,6 +545,7 @@ var sensorHistory = { labels:[], temp:[], humi:[], gas:[], hr:[], spo2:[] };
 var MAX_HISTORY = 500;
 var fullMap, fullMarker, trackLine, trackPoints = [];
 var navigationLine = null, navigationMarkers = [], lastNavigationUpdatedAt = '';
+var satelliteLayer = null, roadNetLayer = null;
 var trackVisible = true, satelliteMode = false;
 var cHr, cEnv, cGas;
 var deviceOnline = false;
@@ -619,8 +620,25 @@ function locClearTrack() {
   clearNavigation();
 }
 function locToggleSatellite() {
-  satelliteMode = !satelliteMode;
-  fullMap.setMapType(satelliteMode ? 'satellite' : 'normal');
+  setSatelliteMode(!satelliteMode);
+}
+
+function ensureMapLayers() {
+  if (!satelliteLayer) satelliteLayer = new AMap.TileLayer.Satellite({ zIndex: 3 });
+  if (!roadNetLayer) roadNetLayer = new AMap.TileLayer.RoadNet({ zIndex: 4 });
+}
+
+function setSatelliteMode(enabled) {
+  if (!fullMap) return;
+  ensureMapLayers();
+  satelliteMode = !!enabled;
+  if (satelliteMode) {
+    fullMap.add([satelliteLayer, roadNetLayer]);
+  } else {
+    fullMap.remove([satelliteLayer, roadNetLayer]);
+  }
+  var selector = document.getElementById('setMapType');
+  if (selector) selector.value = satelliteMode ? 'satellite' : 'normal';
 }
 
 function clearNavigationOverlay() {
@@ -1262,7 +1280,7 @@ function changeOfflineTimeout() {
 function changeMapType() {
   if (!fullMap) return;
   var type = document.getElementById('setMapType').value;
-  fullMap.setMapType(type === 'satellite' ? 'satellite' : 'normal');
+  setSatelliteMode(type === 'satellite');
 }
 
 /* 个人中心 */
