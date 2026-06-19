@@ -195,16 +195,235 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 .logout-btn{display:flex;align-items:center;gap:8px;width:100%;padding:10px 20px;border:none;background:none;color:rgba(255,255,255,0.4);font-size:12px;cursor:pointer;transition:all 0.2s;text-align:left;border-top:1px solid rgba(255,255,255,0.08)}
 .logout-btn:hover{color:rgba(255,255,255,0.7)}
 .logout-btn .nav-icon{font-size:16px}
-.cam-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
-.cam-grid-single{grid-template-columns:1fr;max-width:600px;margin:0 auto}
-.cam-card{background:var(--card);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
-.cam-preview{height:320px;background:#1a1a2e;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.3);font-size:14px}
-.cam-footer{padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
-.cam-footer .cam-name{font-size:14px;font-weight:700}
-.cam-footer .cam-sub{font-size:11px;color:var(--text3);margin-top:2px}
-.cam-open-btn{padding:8px 20px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.2s;text-decoration:none;display:inline-block}
-.cam-open-btn:hover{opacity:0.85}
-@media(max-width:768px){.cam-grid{grid-template-columns:1fr}.cam-preview{height:220px}}
+/* 视觉监控页面 */
+.cam-page-header{margin-bottom:20px}
+.cam-page-header h2{font-size:18px;font-weight:700;color:var(--text)}
+.cam-page-sub{font-size:13px;color:var(--text3);margin-top:4px}
+
+/* 主摄像头卡片 */
+.cam-main-card{
+  background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+  border-radius:16px;
+  padding:40px 24px;
+  text-align:center;
+  box-shadow:0 8px 32px rgba(102,126,234,0.3);
+  margin-bottom:20px;
+  transition:transform 0.2s,box-shadow 0.2s
+}
+.cam-main-card:hover{
+  transform:translateY(-2px);
+  box-shadow:0 12px 40px rgba(102,126,234,0.4)
+}
+.cam-main-preview{
+  max-width:400px;
+  margin:0 auto
+}
+.cam-main-icon{
+  font-size:64px;
+  margin-bottom:16px;
+  filter:drop-shadow(0 4px 8px rgba(0,0,0,0.2))
+}
+.cam-main-title{
+  font-size:22px;
+  font-weight:700;
+  color:#fff;
+  margin-bottom:8px
+}
+.cam-main-desc{
+  font-size:14px;
+  color:rgba(255,255,255,0.8);
+  margin-bottom:24px
+}
+.cam-main-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:14px 32px;
+  background:#fff;
+  color:#667eea;
+  border:none;
+  border-radius:12px;
+  font-size:16px;
+  font-weight:700;
+  cursor:pointer;
+  text-decoration:none;
+  transition:all 0.2s;
+  box-shadow:0 4px 12px rgba(0,0,0,0.15)
+}
+.cam-main-btn:hover{
+  background:#f8f9ff;
+  transform:scale(1.05);
+  box-shadow:0 6px 16px rgba(0,0,0,0.2)
+}
+
+/* 信息卡片网格 */
+.cam-info-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:16px
+}
+
+/* 信息卡片 */
+.cam-info-card{
+  background:var(--card);
+  border-radius:14px;
+  box-shadow:var(--shadow);
+  overflow:hidden
+}
+.cam-info-header{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:16px 20px;
+  background:linear-gradient(135deg,#f8f9ff 0%,#e8ecff 100%);
+  border-bottom:1px solid #e8ecff
+}
+.cam-info-icon{
+  font-size:20px
+}
+.cam-info-title{
+  font-size:14px;
+  font-weight:700;
+  color:var(--text)
+}
+.cam-info-body{
+  padding:16px 20px
+}
+
+/* 设备信息项 */
+.cam-info-item{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:10px 0;
+  border-bottom:1px solid #f5f5f5
+}
+.cam-info-item:last-child{
+  border-bottom:none
+}
+.cam-info-label{
+  font-size:13px;
+  color:var(--text3)
+}
+.cam-info-value{
+  font-size:13px;
+  font-weight:600;
+  color:var(--text);
+  display:flex;
+  align-items:center;
+  gap:8px
+}
+.cam-info-ip{
+  font-family:'SF Mono',Monaco,Consolas,monospace;
+  font-size:12px;
+  background:#f5f5f5;
+  padding:4px 8px;
+  border-radius:6px
+}
+.cam-copy-btn{
+  background:none;
+  border:none;
+  font-size:14px;
+  cursor:pointer;
+  padding:2px;
+  opacity:0.6;
+  transition:opacity 0.2s
+}
+.cam-copy-btn:hover{
+  opacity:1
+}
+
+/* 连接状态指示灯 */
+.cam-status-dot{
+  display:inline-block;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#d9d9d9
+}
+.cam-status-dot.online{
+  background:#52c41a;
+  box-shadow:0 0 6px rgba(82,196,26,0.5);
+  animation:pulse-green 2s infinite
+}
+@keyframes pulse-green{
+  0%,100%{box-shadow:0 0 6px rgba(82,196,26,0.5)}
+  50%{box-shadow:0 0 12px rgba(82,196,26,0.8)}
+}
+
+/* 使用说明列表 */
+.cam-guide-list{
+  display:flex;
+  flex-direction:column;
+  gap:16px
+}
+.cam-guide-item{
+  display:flex;
+  gap:14px;
+  align-items:flex-start
+}
+.cam-guide-num{
+  width:28px;
+  height:28px;
+  background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+  color:#fff;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:13px;
+  font-weight:700;
+  flex-shrink:0
+}
+.cam-guide-text{
+  flex:1
+}
+.cam-guide-text strong{
+  display:block;
+  font-size:13px;
+  font-weight:700;
+  color:var(--text);
+  margin-bottom:4px
+}
+.cam-guide-text p{
+  font-size:12px;
+  color:var(--text3);
+  margin:0;
+  line-height:1.5
+}
+
+/* 复制成功提示 */
+.cam-copy-toast{
+  position:fixed;
+  top:20px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#52c41a;
+  color:#fff;
+  padding:10px 20px;
+  border-radius:8px;
+  font-size:13px;
+  font-weight:600;
+  z-index:10000;
+  animation:toast-in 0.3s ease,toast-out 0.3s ease 1.7s
+}
+@keyframes toast-in{
+  from{opacity:0;transform:translateX(-50%) translateY(-10px)}
+  to{opacity:1;transform:translateX(-50%) translateY(0)}
+}
+@keyframes toast-out{
+  from{opacity:1}
+  to{opacity:0}
+}
+
+/* 响应式 */
+@media(max-width:768px){
+  .cam-info-grid{grid-template-columns:1fr}
+  .cam-main-card{padding:30px 20px}
+  .cam-main-icon{font-size:48px}
+  .cam-main-title{font-size:18px}
+  .cam-main-btn{padding:12px 24px;font-size:14px}
+}
 </style>
 </head>
 <body>
@@ -431,12 +650,92 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 
 <!-- 视觉监控 -->
 <div class="tab-panel" id="panel-camera">
-  <div class="cam-grid cam-grid-single">
-    <div class="cam-card">
-      <div class="cam-preview">&#128247; 摄像头</div>
-      <div class="cam-footer">
-        <div><div class="cam-name">摄像头显示界面</div><div class="cam-sub">MJPEG实时流</div></div>
-        <a class="cam-open-btn" href="http://192.168.3.181" target="_blank" rel="noopener">打开监控</a>
+  <!-- 页面标题 -->
+  <div class="cam-page-header">
+    <h2>&#127909; 视频监控</h2>
+    <div class="cam-page-sub">实时查看摄像头画面</div>
+  </div>
+
+  <!-- 主摄像头卡片 -->
+  <div class="cam-main-card">
+    <div class="cam-main-preview">
+      <div class="cam-main-icon">&#128247;</div>
+      <div class="cam-main-title">摄像头显示界面</div>
+      <div class="cam-main-desc">MJPEG 实时视频流</div>
+      <a class="cam-main-btn" href="http://192.168.3.181" target="_blank" rel="noopener">
+        &#9654; 打开监控
+      </a>
+    </div>
+  </div>
+
+  <!-- 信息卡片区域 -->
+  <div class="cam-info-grid">
+    <!-- 设备信息 -->
+    <div class="cam-info-card">
+      <div class="cam-info-header">
+        <span class="cam-info-icon">&#128204;</span>
+        <span class="cam-info-title">设备信息</span>
+      </div>
+      <div class="cam-info-body">
+        <div class="cam-info-item">
+          <span class="cam-info-label">设备型号</span>
+          <span class="cam-info-value">ESP32-CAM</span>
+        </div>
+        <div class="cam-info-item">
+          <span class="cam-info-label">图像传感器</span>
+          <span class="cam-info-value">OV2640</span>
+        </div>
+        <div class="cam-info-item">
+          <span class="cam-info-label">传输协议</span>
+          <span class="cam-info-value">MJPEG</span>
+        </div>
+        <div class="cam-info-item">
+          <span class="cam-info-label">IP 地址</span>
+          <span class="cam-info-value cam-info-ip">
+            192.168.3.181
+            <button class="cam-copy-btn" onclick="copyCameraIP()" title="复制IP地址">&#128203;</button>
+          </span>
+        </div>
+        <div class="cam-info-item">
+          <span class="cam-info-label">连接状态</span>
+          <span class="cam-info-value">
+            <span class="cam-status-dot online"></span>
+            在线
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 使用说明 -->
+    <div class="cam-info-card">
+      <div class="cam-info-header">
+        <span class="cam-info-icon">&#128161;</span>
+        <span class="cam-info-title">使用说明</span>
+      </div>
+      <div class="cam-info-body">
+        <div class="cam-guide-list">
+          <div class="cam-guide-item">
+            <span class="cam-guide-num">1</span>
+            <div class="cam-guide-text">
+              <strong>连接网络</strong>
+              <p>确保您的设备与摄像头在同一局域网内</p>
+            </div>
+          </div>
+          <div class="cam-guide-item">
+            <span class="cam-guide-num">2</span>
+            <div class="cam-guide-text">
+              <strong>打开监控</strong>
+              <p>点击上方"打开监控"按钮</p>
+            </div>
+          </div>
+          <div class="cam-guide-item">
+            <span class="cam-guide-num">3</span>
+            <div class="cam-guide-text">
+              <strong>查看画面</strong>
+              <p>将在新窗口中显示实时视频画面</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1331,7 +1630,44 @@ if (loginUserEl) loginUserEl.addEventListener('keydown', function(e) { if (e.key
 var regPassConfirmEl = document.getElementById('regPassConfirm');
 if (regPassConfirmEl) regPassConfirmEl.addEventListener('keydown', function(e) { if (e.key === 'Enter') doRegister(); });
 
-/* 摄像头模块 - 已简化为单摄像头 */
+/* 摄像头模块 - 复制IP地址功能 */
+function copyCameraIP() {
+  var ip = '192.168.3.181';
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(ip).then(function() {
+      showCopyToast();
+    }).catch(function() {
+      fallbackCopy(ip);
+    });
+  } else {
+    fallbackCopy(ip);
+  }
+}
+
+function fallbackCopy(text) {
+  var textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.cssText = 'position:fixed;left:-9999px;top:-9999px';
+  document.body.appendChild(textarea);
+  textarea.select();
+  try {
+    document.execCommand('copy');
+    showCopyToast();
+  } catch (e) {
+    console.error('复制失败', e);
+  }
+  document.body.removeChild(textarea);
+}
+
+function showCopyToast() {
+  var toast = document.createElement('div');
+  toast.className = 'cam-copy-toast';
+  toast.textContent = '✓ IP地址已复制';
+  document.body.appendChild(toast);
+  setTimeout(function() {
+    if (toast.parentNode) toast.parentNode.removeChild(toast);
+  }, 2000);
+}
 
 /* ================================================================
    启动
