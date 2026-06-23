@@ -195,6 +195,35 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 .logout-btn{display:flex;align-items:center;gap:8px;width:100%;padding:10px 20px;border:none;background:none;color:rgba(255,255,255,0.4);font-size:12px;cursor:pointer;transition:all 0.2s;text-align:left;border-top:1px solid rgba(255,255,255,0.08)}
 .logout-btn:hover{color:rgba(255,255,255,0.7)}
 .logout-btn .nav-icon{font-size:16px}
+/* 手环状态页面 */
+.wrist-page-header{margin-bottom:18px}
+.wrist-page-header h2{font-size:18px;font-weight:700;color:var(--text)}
+.wrist-page-sub{font-size:13px;color:var(--text3);margin-top:4px}
+.wrist-status-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px}
+.wrist-card{background:var(--card);border-radius:14px;padding:20px;box-shadow:var(--shadow);border-left:4px solid var(--text3);transition:border-color 0.2s,transform 0.15s,box-shadow 0.15s}
+.wrist-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,0.1)}
+.wrist-card.online{border-left-color:var(--success)}
+.wrist-card.offline{border-left-color:var(--danger)}
+.wrist-card.unknown{border-left-color:var(--text3)}
+.wrist-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.wrist-name{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:700}
+.wrist-icon{width:42px;height:42px;border-radius:12px;background:#f4f7fb;display:flex;align-items:center;justify-content:center;font-size:22px}
+.wrist-state{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700}
+.wrist-dot{width:8px;height:8px;border-radius:50%;background:var(--text3)}
+.wrist-dot.online{background:var(--success);box-shadow:0 0 8px rgba(82,196,26,0.5)}
+.wrist-dot.offline{background:var(--danger);box-shadow:0 0 8px rgba(255,77,79,0.35)}
+.wrist-dot.unknown{background:var(--text3)}
+.wrist-metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.wrist-metric{background:#f8fafc;border-radius:10px;padding:12px}
+.wrist-metric-label{font-size:11px;color:var(--text3);margin-bottom:6px}
+.wrist-metric-value{font-size:17px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+.wrist-info-card{background:var(--card);border-radius:14px;padding:18px;box-shadow:var(--shadow)}
+.wrist-info-card h3{font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text2)}
+.wrist-info-row{display:flex;justify-content:space-between;gap:12px;font-size:12px;padding:8px 0;border-bottom:1px solid #f5f5f5}
+.wrist-info-row:last-child{border-bottom:none}
+.wrist-info-row .key{color:var(--text3)}
+.wrist-info-row .val{font-weight:600;text-align:right}
+@media(max-width:768px){.wrist-status-grid{grid-template-columns:1fr}.wrist-metrics{grid-template-columns:1fr}}
 /* 视觉监控页面 */
 .cam-page-header{margin-bottom:20px}
 .cam-page-header h2{font-size:18px;font-weight:700;color:var(--text)}
@@ -483,6 +512,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
     <button class="nav-item" onclick="switchTab('alerts',this)"><span class="nav-icon">&#9888;</span><span>报警中心</span></button>
     <button class="nav-item" onclick="switchTab('camera',this)"><span class="nav-icon">&#128247;</span><span>视觉监控</span></button>
     <button class="nav-item" onclick="switchTab('location',this)"><span class="nav-icon">&#128506;</span><span>实时定位</span></button>
+    <button class="nav-item" onclick="switchTab('wristband',this)"><span class="nav-icon">&#8986;</span><span>手环状态</span></button>
     <button class="nav-item" onclick="switchTab('profile',this)"><span class="nav-icon">&#128100;</span><span>个人中心</span></button>
   </div>
   <div class="sidebar-conn">
@@ -750,6 +780,42 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
     <button class="loc-btn red" onclick="locToggleSatellite()">&#127758; 切换卫星图</button>
   </div>
   <div id="fullMap"></div>
+</div>
+
+<!-- 手环状态 -->
+<div class="tab-panel" id="panel-wristband">
+  <div class="wrist-page-header">
+    <h2>&#8986; 手环状态</h2>
+    <div class="wrist-page-sub">左右手环在线状态与最近通信时间</div>
+  </div>
+  <div class="wrist-status-grid">
+    <div class="wrist-card unknown" id="wrist-left-card">
+      <div class="wrist-card-head">
+        <div class="wrist-name"><div class="wrist-icon">&#129306;</div><span>左手环</span></div>
+        <div class="wrist-state"><span class="wrist-dot unknown" id="wrist-left-dot"></span><span id="wrist-left-state">等待数据</span></div>
+      </div>
+      <div class="wrist-metrics">
+        <div class="wrist-metric"><div class="wrist-metric-label">连接状态</div><div class="wrist-metric-value" id="wrist-left-online">--</div></div>
+        <div class="wrist-metric"><div class="wrist-metric-label">最近通信</div><div class="wrist-metric-value" id="wrist-left-age">--</div></div>
+      </div>
+    </div>
+    <div class="wrist-card unknown" id="wrist-right-card">
+      <div class="wrist-card-head">
+        <div class="wrist-name"><div class="wrist-icon">&#129307;</div><span>右手环</span></div>
+        <div class="wrist-state"><span class="wrist-dot unknown" id="wrist-right-dot"></span><span id="wrist-right-state">等待数据</span></div>
+      </div>
+      <div class="wrist-metrics">
+        <div class="wrist-metric"><div class="wrist-metric-label">连接状态</div><div class="wrist-metric-value" id="wrist-right-online">--</div></div>
+        <div class="wrist-metric"><div class="wrist-metric-label">最近通信</div><div class="wrist-metric-value" id="wrist-right-age">--</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="wrist-info-card">
+    <h3>&#128202; 数据说明</h3>
+    <div class="wrist-info-row"><span class="key">数据来源</span><span class="val">华为云 OBS latest.json</span></div>
+    <div class="wrist-info-row"><span class="key">在线判定</span><span class="val">P4 最近 30 秒收到手环 PONG 或按键消息</span></div>
+    <div class="wrist-info-row"><span class="key">字段</span><span class="val">wristband_*_online / wristband_*_last_seen_ms</span></div>
+  </div>
 </div>
 
 <!-- 个人中心 -->
@@ -1284,6 +1350,58 @@ function setColor(id, color) { var el = document.getElementById(id); if(el) el.s
 function setText(id, text) { var el = document.getElementById(id); if(el) el.textContent = text; }
 function setItem(el, level) { el.className = 'safety-item ' + level; }
 
+function formatWristbandAge(ms) {
+  if (ms == null || !isFinite(Number(ms))) return '--';
+  ms = Number(ms);
+  if (ms < 0) return '从未收到';
+  if (ms < 1000) return Math.round(ms) + ' ms';
+  if (ms < 60000) return (ms / 1000).toFixed(1) + ' 秒';
+  return Math.floor(ms / 60000) + ' 分 ' + Math.floor((ms % 60000) / 1000) + ' 秒';
+}
+
+function setWristbandCard(side, online, ageMs) {
+  var card = document.getElementById('wrist-' + side + '-card');
+  var dot = document.getElementById('wrist-' + side + '-dot');
+  if (!card || !dot) return;
+
+  var hasData = online != null || ageMs != null;
+  var age = Number(ageMs);
+  var state = 'unknown';
+  var stateText = hasData ? '未连接' : '等待数据';
+  var onlineText = hasData ? '未知' : '--';
+
+  if (hasData && age < 0) {
+    state = 'unknown';
+    stateText = '未连接';
+    onlineText = '未连接';
+  } else if (online === true) {
+    state = 'online';
+    stateText = '在线';
+    onlineText = '在线';
+  } else if (online === false) {
+    state = 'offline';
+    stateText = '离线';
+    onlineText = '离线';
+  }
+
+  card.className = 'wrist-card ' + state;
+  dot.className = 'wrist-dot ' + state;
+  setText('wrist-' + side + '-state', stateText);
+  setText('wrist-' + side + '-online', onlineText);
+  setText('wrist-' + side + '-age', formatWristbandAge(ageMs));
+  setColor('wrist-' + side + '-online', state === 'online' ? 'var(--success)' : state === 'offline' ? 'var(--danger)' : 'var(--text3)');
+}
+
+function updateWristbandStatus(d) {
+  setWristbandCard('left', d.wristband_left_online, d.wristband_left_last_seen_ms);
+  setWristbandCard('right', d.wristband_right_online, d.wristband_right_last_seen_ms);
+}
+
+function resetWristbandStatus() {
+  setWristbandCard('left', null, null);
+  setWristbandCard('right', null, null);
+}
+
 /* 安全评分 */
 function updateSafetyScore(d) {
   var score = 100;
@@ -1354,6 +1472,7 @@ function setDeviceOnline(online) {
     document.getElementById('safetySummary').style.color = '#9ca3af';
     var items = document.querySelectorAll('#safetyDetails .safety-item');
     for (var i = 0; i < items.length; i++) setItem(items[i], 'off');
+    resetWristbandStatus();
   }
 }
 
@@ -1484,6 +1603,7 @@ function updateUI(d) {
     sensorHistory.gas.shift(); sensorHistory.hr.shift(); sensorHistory.spo2.shift();
   }
   updateChartDisplay();
+  updateWristbandStatus(d);
   updateSafetyScore(d);
   updateProfileStatus(d);
   checkThresholds(d);
