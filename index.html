@@ -692,7 +692,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
       <div class="cam-main-icon">&#128247;</div>
       <div class="cam-main-title">摄像头显示界面</div>
       <div class="cam-main-desc">MJPEG 实时视频流</div>
-      <a class="cam-main-btn" href="http://10.74.75.226" target="_blank" rel="noopener">
+      <a class="cam-main-btn" href="http://10.100.147.226/" target="_blank" rel="noopener">
         &#9654; 打开监控
       </a>
     </div>
@@ -722,7 +722,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
         <div class="cam-info-item">
           <span class="cam-info-label">IP 地址</span>
           <span class="cam-info-value cam-info-ip">
-            10.74.75.226
+            10.100.147.226
             <button class="cam-copy-btn" onclick="copyCameraIP()" title="复制IP地址">&#128203;</button>
           </span>
         </div>
@@ -1752,7 +1752,7 @@ if (regPassConfirmEl) regPassConfirmEl.addEventListener('keydown', function(e) {
 
 /* 摄像头模块 - 复制IP地址功能 */
 function copyCameraIP() {
-  var ip = '10.74.75.226';
+  var ip = '10.100.147.226';
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(ip).then(function() {
       showCopyToast();
