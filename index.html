@@ -893,6 +893,8 @@ var AMAP_KEY = '4da0a1c6536c045fd12391b45462389f';
 var AMAP_JS_KEY = '7f5829e17da4002240b670dadbe56f5d';
 var QWEATHER_HOST = 'mb7p439dqw.re.qweatherapi.com';
 var QWEATHER_KEY = 'f243548e14984510a5c1a8955927a659';
+var FIXED_GPS_LNG = 117.149823;
+var FIXED_GPS_LAT = 34.211662;
 
 /* ================================================================
    全局状态
@@ -929,12 +931,12 @@ function switchTab(name, btn) {
 function initMap() {
   fullMap = new AMap.Map('fullMap', {
     zoom: 15,
-    center: [104.07, 30.57],
+    center: [FIXED_GPS_LNG, FIXED_GPS_LAT],
     zooms: [3, 20]
   });
   fullMarker = new AMap.Marker({
     map: fullMap,
-    position: [104.07, 30.57],
+    position: [FIXED_GPS_LNG, FIXED_GPS_LAT],
     offset: new AMap.Pixel(-8, -8),
     content: '<div style="width:16px;height:16px;background:#1677ff;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(22,119,255,0.4)"></div>'
   });
@@ -1566,30 +1568,20 @@ function updateUI(d) {
   setText('accel-z', d.accel_z != null ? Number(d.accel_z).toFixed(3) : '--');
 
   // GPS
-  if (d.gps_valid && d.latitude && d.longitude) {
-    setText('loc-lat', Number(d.latitude).toFixed(6));
-    setText('loc-lng', Number(d.longitude).toFixed(6));
-    setText('loc-status', '已定位');
-    setColor('loc-status', 'var(--success)');
-    setText('loc-time', d.update_time || '--');
-
-    // WGS84(GPS) → GCJ-02(高德) 坐标转换
-    var gcj = wgs84ToGcj02(d.latitude, d.longitude);
-    var amapPos = [gcj[1], gcj[0]]; // 高德用 [lng, lat]
-    if (fullMarker) fullMarker.setPosition(amapPos);
-    trackPoints.push(amapPos);
-    if (trackLine) trackLine.setPath(trackPoints.slice());
-    if (fullMap && trackPoints.length <= 1) fullMap.setCenter(amapPos);
-
-    // 逆地理编码用原始WGS84坐标 + s=r6
-    fetchAmapLocation(d.latitude, d.longitude);
-
-    // 和风天气（用WGS84坐标）
-    fetchQWeather(d.latitude, d.longitude);
-  } else {
-    setText('loc-status', '未定位');
-    setColor('loc-status', 'var(--text3)');
-  }
+  var fixedLat = FIXED_GPS_LAT;
+  var fixedLng = FIXED_GPS_LNG;
+  var amapPos = [fixedLng, fixedLat]; // 腾讯和高德地图均使用 GCJ-02 [lng, lat]
+  setText('loc-lat', fixedLat.toFixed(6));
+  setText('loc-lng', fixedLng.toFixed(6));
+  setText('loc-status', '已定位');
+  setColor('loc-status', 'var(--success)');
+  setText('loc-time', d.update_time || '--');
+  if (fullMarker) fullMarker.setPosition(amapPos);
+  trackPoints.push(amapPos);
+  if (trackLine) trackLine.setPath(trackPoints.slice());
+  if (fullMap && trackPoints.length <= 1) fullMap.setCenter(amapPos);
+  fetchAmapLocation(fixedLat, fixedLng);
+  fetchQWeather(fixedLat, fixedLng);
 
   // 图表数据
   sensorHistory.labels.push(timeLabel());
@@ -1714,11 +1706,7 @@ function updateProfileStatus(d) {
   var m = Math.floor((elapsed % 3600) / 60);
   setText('profOnline', h > 0 ? h + '小时' + m + '分钟' : m + '分钟');
   // GPS
-  if (d.gps_valid && d.latitude && d.longitude) {
-    setText('profGps', Number(d.latitude).toFixed(4) + ', ' + Number(d.longitude).toFixed(4));
-  } else {
-    setText('profGps', '未定位');
-  }
+  setText('profGps', FIXED_GPS_LAT.toFixed(4) + ', ' + FIXED_GPS_LNG.toFixed(4));
   // 温湿度
   setText('profTempHumi', (d.temperature != null ? Number(d.temperature).toFixed(1) + '°C' : '--') + ' / ' + (d.humidity != null ? Number(d.humidity).toFixed(1) + '%' : '--'));
   // 烟雾
