@@ -893,8 +893,6 @@ var AMAP_KEY = '4da0a1c6536c045fd12391b45462389f';
 var AMAP_JS_KEY = '7f5829e17da4002240b670dadbe56f5d';
 var QWEATHER_HOST = 'mb7p439dqw.re.qweatherapi.com';
 var QWEATHER_KEY = 'f243548e14984510a5c1a8955927a659';
-var FIXED_GPS_LNG = 117.149823;
-var FIXED_GPS_LAT = 34.211662;
 
 /* ================================================================
    全局状态
@@ -902,7 +900,7 @@ var FIXED_GPS_LAT = 34.211662;
 var msgCount = 0;
 var sensorHistory = { labels:[], temp:[], humi:[], gas:[], hr:[], spo2:[] };
 var MAX_HISTORY = 500;
-var fullMap, fullMarker, trackLine, trackPoints = [];
+var fullMap, fullMarker = null, trackLine, trackPoints = [];
 var navigationLine = null, navigationMarkers = [], lastNavigationUpdatedAt = '';
 var satelliteLayer = null, roadNetLayer = null;
 var trackVisible = true, satelliteMode = false;
@@ -931,14 +929,7 @@ function switchTab(name, btn) {
 function initMap() {
   fullMap = new AMap.Map('fullMap', {
     zoom: 15,
-    center: [FIXED_GPS_LNG, FIXED_GPS_LAT],
     zooms: [3, 20]
-  });
-  fullMarker = new AMap.Marker({
-    map: fullMap,
-    position: [FIXED_GPS_LNG, FIXED_GPS_LAT],
-    offset: new AMap.Pixel(-8, -8),
-    content: '<div style="width:16px;height:16px;background:#1677ff;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(22,119,255,0.4)"></div>'
   });
   trackLine = new AMap.Polyline({
     map: fullMap,
@@ -1168,6 +1159,71 @@ function fetchQWeather(lat, lng) {
     setText('weather-desc', '网络错误: ' + err.message);
     console.error('[QW] weather error:', err);
   });
+}
+
+function getValidGps(d) {
+  if (!d || d.gps_valid !== true) return null;
+  var lat = Number(d.latitude);
+  var lng = Number(d.longitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+  return { lat: lat, lng: lng };
+}
+
+function clearCurrentGps() {
+  setText('loc-lat', '--');
+  setText('loc-lng', '--');
+  setText('loc-status', '未定位');
+  setColor('loc-status', 'var(--text3)');
+  setText('loc-time', '--');
+  setText('loc-addr', '--');
+  setText('weather-desc', '--');
+  setText('weather-temp', '--');
+  setText('weather-wind', '--');
+  setText('weather-humi', '--');
+  setText('weather-time', '--');
+  setText('profGps', '未定位');
+  if (fullMap && fullMarker) {
+    fullMap.remove(fullMarker);
+    fullMarker = null;
+  }
+  lastGeoLat = null;
+  lastGeoLng = null;
+  cachedAddr = '--';
+  lastWeatherFetch = 0;
+}
+
+function updateCurrentGps(d) {
+  var gps = getValidGps(d);
+  if (!gps) {
+    clearCurrentGps();
+    return;
+  }
+
+  setText('loc-lat', gps.lat.toFixed(6));
+  setText('loc-lng', gps.lng.toFixed(6));
+  setText('loc-status', '已定位');
+  setColor('loc-status', 'var(--success)');
+  setText('loc-time', d.update_time || '--');
+
+  var gcj = wgs84ToGcj02(gps.lat, gps.lng);
+  var amapPos = [gcj[1], gcj[0]];
+  if (!fullMarker && fullMap) {
+    fullMarker = new AMap.Marker({
+      map: fullMap,
+      position: amapPos,
+      offset: new AMap.Pixel(-8, -8),
+      content: '<div style="width:16px;height:16px;background:#1677ff;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(22,119,255,0.4)"></div>'
+    });
+  } else if (fullMarker) {
+    fullMarker.setPosition(amapPos);
+  }
+
+  trackPoints.push(amapPos);
+  if (trackLine) trackLine.setPath(trackPoints.slice());
+  if (fullMap && trackPoints.length <= 1) fullMap.setCenter(amapPos);
+  fetchAmapLocation(gcj[0], gcj[1]);
+  fetchQWeather(gps.lat, gps.lng);
 }
 
 /* ================================================================
@@ -1465,6 +1521,7 @@ function setDeviceOnline(online) {
     document.getElementById('connText').textContent = '设备离线';
     document.getElementById('topStatus').textContent = '设备不在线';
     document.getElementById('topStatus').className = 'status offline';
+    clearCurrentGps();
     // 重置安全评分
     document.getElementById('safetyScore').textContent = '--';
     document.getElementById('safetyScore').style.color = '#9ca3af';
@@ -1568,20 +1625,7 @@ function updateUI(d) {
   setText('accel-z', d.accel_z != null ? Number(d.accel_z).toFixed(3) : '--');
 
   // GPS
-  var fixedLat = FIXED_GPS_LAT;
-  var fixedLng = FIXED_GPS_LNG;
-  var amapPos = [fixedLng, fixedLat]; // 腾讯和高德地图均使用 GCJ-02 [lng, lat]
-  setText('loc-lat', fixedLat.toFixed(6));
-  setText('loc-lng', fixedLng.toFixed(6));
-  setText('loc-status', '已定位');
-  setColor('loc-status', 'var(--success)');
-  setText('loc-time', d.update_time || '--');
-  if (fullMarker) fullMarker.setPosition(amapPos);
-  trackPoints.push(amapPos);
-  if (trackLine) trackLine.setPath(trackPoints.slice());
-  if (fullMap && trackPoints.length <= 1) fullMap.setCenter(amapPos);
-  fetchAmapLocation(fixedLat, fixedLng);
-  fetchQWeather(fixedLat, fixedLng);
+  updateCurrentGps(d);
 
   // 图表数据
   sensorHistory.labels.push(timeLabel());
@@ -1706,7 +1750,8 @@ function updateProfileStatus(d) {
   var m = Math.floor((elapsed % 3600) / 60);
   setText('profOnline', h > 0 ? h + '小时' + m + '分钟' : m + '分钟');
   // GPS
-  setText('profGps', FIXED_GPS_LAT.toFixed(4) + ', ' + FIXED_GPS_LNG.toFixed(4));
+  var gps = getValidGps(d);
+  setText('profGps', gps ? gps.lat.toFixed(4) + ', ' + gps.lng.toFixed(4) : '未定位');
   // 温湿度
   setText('profTempHumi', (d.temperature != null ? Number(d.temperature).toFixed(1) + '°C' : '--') + ' / ' + (d.humidity != null ? Number(d.humidity).toFixed(1) + '%' : '--'));
   // 烟雾
