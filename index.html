@@ -692,7 +692,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
       <div class="cam-main-icon">&#128247;</div>
       <div class="cam-main-title">摄像头显示界面</div>
       <div class="cam-main-desc">MJPEG 实时视频流</div>
-      <a class="cam-main-btn" href="http://10.163.142.226/" target="_blank" rel="noopener">
+      <a class="cam-main-btn" href="http://10.143.137.226/" target="_blank" rel="noopener">
         &#9654; 打开监控
       </a>
     </div>
@@ -722,7 +722,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
         <div class="cam-info-item">
           <span class="cam-info-label">IP 地址</span>
           <span class="cam-info-value cam-info-ip">
-            10.163.142.226
+            10.143.137.226
             <button class="cam-copy-btn" onclick="copyCameraIP()" title="复制IP地址">&#128203;</button>
           </span>
         </div>
@@ -888,7 +888,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
    ★★★ 配置区 ★★★
    ================================================================ */
 var OBS_BASE = 'https://smart-guide-data.obs.cn-north-4.myhuaweicloud.com';
-var LOCAL_SERVER_BASE = localStorage.getItem('sg_local_server_base') || 'http://10.163.142.48:8000';
+var DEFAULT_LOCAL_SERVER_BASE = 'http://10.143.137.48:8000';
+var storedLocalServerBase = localStorage.getItem('sg_local_server_base');
+if (storedLocalServerBase === 'http://10.163.142.48:8000') {
+  storedLocalServerBase = DEFAULT_LOCAL_SERVER_BASE;
+  localStorage.setItem('sg_local_server_base', DEFAULT_LOCAL_SERVER_BASE);
+}
+var LOCAL_SERVER_BASE = storedLocalServerBase || DEFAULT_LOCAL_SERVER_BASE;
 var AMAP_KEY = '4da0a1c6536c045fd12391b45462389f';
 var AMAP_JS_KEY = '7f5829e17da4002240b670dadbe56f5d';
 var QWEATHER_HOST = 'mb7p439dqw.re.qweatherapi.com';
@@ -900,7 +906,7 @@ var QWEATHER_KEY = 'f243548e14984510a5c1a8955927a659';
 var msgCount = 0;
 var sensorHistory = { labels:[], temp:[], humi:[], gas:[], hr:[], spo2:[] };
 var MAX_HISTORY = 500;
-var fullMap, fullMarker = null, trackLine, trackPoints = [];
+var fullMap, fullMarker = null, trackLine = null, trackPoints = [];
 var navigationLine = null, navigationMarkers = [], lastNavigationUpdatedAt = '';
 var satelliteLayer = null, roadNetLayer = null;
 var trackVisible = true, satelliteMode = false;
@@ -931,16 +937,13 @@ function initMap() {
     zoom: 15,
     zooms: [3, 20]
   });
-  trackLine = new AMap.Polyline({
+}
+
+function createNavigationLine(path) {
+  if (!fullMap || !path || path.length < 2) return null;
+  return new AMap.Polyline({
     map: fullMap,
-    path: [],
-    strokeColor: '#1677ff',
-    strokeWeight: 3,
-    strokeOpacity: 0.6
-  });
-  navigationLine = new AMap.Polyline({
-    map: fullMap,
-    path: [],
+    path: path,
     strokeColor: '#ff4d4f',
     strokeWeight: 6,
     strokeOpacity: 0.85,
@@ -949,16 +952,14 @@ function initMap() {
   });
 }
 
-function createNavigationLine() {
-  if (!fullMap) return null;
+function createTrackLine(path) {
+  if (!fullMap || !path || path.length < 2) return null;
   return new AMap.Polyline({
     map: fullMap,
-    path: [],
-    strokeColor: '#ff4d4f',
-    strokeWeight: 6,
-    strokeOpacity: 0.85,
-    strokeStyle: 'solid',
-    lineJoin: 'round'
+    path: path,
+    strokeColor: '#1677ff',
+    strokeWeight: 3,
+    strokeOpacity: trackVisible ? 0.6 : 0
   });
 }
 
@@ -966,7 +967,8 @@ function locCenter() { if (trackPoints.length > 0) fullMap.setCenter(trackPoints
 function locToggleTrack() { trackVisible = !trackVisible; if (trackLine) trackLine.setOptions({ strokeOpacity: trackVisible ? 0.6 : 0 }); }
 function locClearTrack() {
   trackPoints = [];
-  if (trackLine) trackLine.setPath([]);
+  if (fullMap && trackLine) fullMap.remove(trackLine);
+  trackLine = null;
   clearNavigation();
 }
 function locToggleSatellite() {
@@ -993,10 +995,9 @@ function setSatelliteMode(enabled) {
 
 function clearNavigationOverlay() {
   if (fullMap && navigationLine) {
-    navigationLine.setPath([]);
     fullMap.remove(navigationLine);
-    navigationLine = createNavigationLine();
   }
+  navigationLine = null;
   if (fullMap && navigationMarkers.length) {
     navigationMarkers.forEach(function(marker){ fullMap.remove(marker); });
   }
@@ -1005,7 +1006,7 @@ function clearNavigationOverlay() {
 }
 
 function drawNavigation(nav) {
-  if (!fullMap || !navigationLine || !nav || !nav.active || !nav.route || !nav.route.polyline) return;
+  if (!fullMap || !nav || !nav.active || !nav.route || !nav.route.polyline) return;
   if (nav.updated_at && nav.updated_at === lastNavigationUpdatedAt) return;
 
   var path = nav.route.polyline.map(function(point) {
@@ -1016,7 +1017,9 @@ function drawNavigation(nav) {
   if (path.length < 2) return;
 
   lastNavigationUpdatedAt = nav.updated_at || String(Date.now());
-  navigationLine.setPath(path);
+  if (navigationLine) fullMap.remove(navigationLine);
+  navigationLine = createNavigationLine(path);
+  if (!navigationLine) return;
 
   if (navigationMarkers.length) {
     navigationMarkers.forEach(function(marker){ fullMap.remove(marker); });
@@ -1220,7 +1223,10 @@ function updateCurrentGps(d) {
   }
 
   trackPoints.push(amapPos);
-  if (trackLine) trackLine.setPath(trackPoints.slice());
+  if (trackPoints.length >= 2) {
+    if (!trackLine) trackLine = createTrackLine(trackPoints.slice());
+    else trackLine.setPath(trackPoints.slice());
+  }
   if (fullMap && trackPoints.length <= 1) fullMap.setCenter(amapPos);
   fetchAmapLocation(gcj[0], gcj[1]);
   fetchQWeather(gps.lat, gps.lng);
@@ -1785,7 +1791,7 @@ if (regPassConfirmEl) regPassConfirmEl.addEventListener('keydown', function(e) {
 
 /* 摄像头模块 - 复制IP地址功能 */
 function copyCameraIP() {
-  var ip = '10.163.142.226';
+  var ip = '10.143.137.226';
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(ip).then(function() {
       showCopyToast();

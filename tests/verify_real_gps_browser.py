@@ -1,25 +1,23 @@
 import asyncio
 import json
-import urllib.request
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 from playwright.async_api import async_playwright, expect
 
 
-OBS_URL = "https://smart-guide-data.obs.cn-north-4.myhuaweicloud.com/latest.json"
 PAGE_URL = (Path(__file__).resolve().parents[1] / "index.html").as_uri()
 CHROME_PATH = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
-
-
-def fetch_obs_payload():
-    with urllib.request.urlopen(OBS_URL, timeout=20) as response:
-        return json.loads(response.read().decode("utf-8"))
+GPS_PAYLOAD = {
+    "update_time": "browser-test",
+    "gps_valid": True,
+    "latitude": 36.223648,
+    "longitude": 117.028252,
+}
 
 
 async def main():
-    payload = fetch_obs_payload()
-    if not payload.get("gps_valid"):
-        raise AssertionError("OBS does not currently contain a valid GPS fix")
+    payload = dict(GPS_PAYLOAD)
 
     location_requests = []
     obs_responses = []
@@ -56,8 +54,38 @@ async def main():
                 body=json.dumps(response_payload, ensure_ascii=False),
             )
 
+        async def handle_amap_regeo(route):
+            callback = parse_qs(urlparse(route.request.url).query)["callback"][0]
+            body = callback + "(" + json.dumps({
+                "status": "1",
+                "regeocode": {
+                    "formatted_address": "测试定位地址",
+                    "addressComponent": {"citycode": "0531"},
+                },
+            }, ensure_ascii=False) + ")"
+            await route.fulfill(status=200, content_type="application/javascript", body=body)
+
+        async def handle_weather(route):
+            await route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps({
+                    "code": "200",
+                    "now": {
+                        "text": "晴",
+                        "temp": "26",
+                        "windDir": "东风",
+                        "windScale": "2",
+                        "humidity": "50",
+                        "obsTime": "2026-07-20T14:00+08:00",
+                    },
+                }, ensure_ascii=False),
+            )
+
         await page.route("**/latest.json?*", handle_obs)
-        await page.route("http://10.163.142.48:8000/**", handle_local_server)
+        await page.route("http://10.143.137.48:8000/**", handle_local_server)
+        await page.route("https://restapi.amap.com/v3/geocode/regeo?*", handle_amap_regeo)
+        await page.route("https://mb7p439dqw.re.qweatherapi.com/v7/weather/now?*", handle_weather)
         page.on(
             "response",
             lambda response: obs_responses.append(f"{response.status} {response.url}")
@@ -132,10 +160,12 @@ async def main():
         assert invalid_state["markerExists"] is False
         assert invalid_state["trackLength"] == track_before_invalid
         assert len(location_requests) == requests_before_invalid
+        runtime_errors = [message for message in console_errors if message.startswith("error:")]
+        assert not runtime_errors, "browser console errors: " + " | ".join(runtime_errors)
         await browser.close()
 
     print(
-        "PASS real GPS",
+        "PASS GPS rendering",
         f"lat={float(payload['latitude']):.6f}",
         f"lon={float(payload['longitude']):.6f}",
     )

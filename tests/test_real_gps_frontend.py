@@ -16,6 +16,15 @@ def function_source(name, next_name):
 
 
 class RealGpsFrontendTests(unittest.TestCase):
+    def test_current_lan_addresses_are_used(self):
+        self.assertIn("'http://10.143.137.48:8000'", SOURCE)
+        self.assertIn("localStorage.setItem('sg_local_server_base', DEFAULT_LOCAL_SERVER_BASE)", SOURCE)
+        self.assertEqual(SOURCE.count("10.163.142.48"), 1)
+        self.assertIn('href="http://10.143.137.226/"', SOURCE)
+        self.assertIn("var ip = '10.143.137.226'", SOURCE)
+        self.assertGreaterEqual(SOURCE.count("10.143.137.226"), 3)
+        self.assertNotIn("10.163.142.226", SOURCE)
+
     def test_fixed_gps_sources_are_removed(self):
         self.assertNotIn("FIXED_GPS_LAT", SOURCE)
         self.assertNotIn("FIXED_GPS_LNG", SOURCE)
@@ -28,6 +37,10 @@ class RealGpsFrontendTests(unittest.TestCase):
         init_map = function_source("initMap", "createNavigationLine")
         self.assertNotIn("new AMap.Marker", init_map)
         self.assertNotIn("center:", init_map)
+
+    def test_polylines_are_not_created_or_cleared_with_empty_paths(self):
+        self.assertNotIn("path: []", SOURCE)
+        self.assertNotIn("setPath([])", SOURCE)
 
     def test_obs_gps_drives_each_coordinate_consumer(self):
         self.assertIn("function getValidGps(d)", SOURCE)
